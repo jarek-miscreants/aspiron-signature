@@ -1,7 +1,7 @@
 interface Env {
   ASSETS: Fetcher;
   SIGNATURES: R2Bucket;
-  UPLOAD_SECRET: string;
+  UPLOAD_SECRET?: string;
   R2_PUBLIC_BASE?: string;
 }
 
@@ -24,11 +24,20 @@ export default {
 };
 
 async function handleUpload(request: Request, env: Env): Promise<Response> {
-  if (!env.UPLOAD_SECRET) {
-    return json({ error: "Server missing UPLOAD_SECRET" }, 500);
-  }
-  if (request.headers.get("X-Upload-Secret") !== env.UPLOAD_SECRET) {
+  // Optional shared-secret gate (only enforced if the var is configured)
+  if (env.UPLOAD_SECRET && request.headers.get("X-Upload-Secret") !== env.UPLOAD_SECRET) {
     return json({ error: "Unauthorized" }, 401);
+  }
+
+  // Same-origin check: only accept uploads initiated from the served page
+  const origin = request.headers.get("Origin");
+  const referer = request.headers.get("Referer");
+  const host = new URL(request.url).origin;
+  if (origin && origin !== host) {
+    return json({ error: "Cross-origin uploads not allowed" }, 403);
+  }
+  if (!origin && referer && !referer.startsWith(host)) {
+    return json({ error: "Cross-origin uploads not allowed" }, 403);
   }
 
   const ct = request.headers.get("Content-Type") || "";

@@ -124,6 +124,12 @@ const DEPT_BACKGROUNDS = {
   influence: "Aspiron Influence-Email Signature-INFLUENCE BG.png",
   ventures: "Aspiron Ventures-Email Signature-VENTURES BG.png",
 };
+const DEPT_COLORS = {
+  group: "#FFCB76",
+  search: "#D8923E",
+  influence: "#FFA57E",
+  ventures: "#EECAB0",
+};
 let currentDept = "group";
 const PT_TO_PX = 4/3;
 const R2_PUBLIC_BASE = "https://pub-376c070665f24d80ac2828a67b43160a.r2.dev";
@@ -237,6 +243,7 @@ function buildHtml(imgUrl) {
     influence: escapeAttr(els.influence.value),
     ventures: escapeAttr(els.ventures.value),
     img: escapeAttr(imgUrl),
+    iconBg: DEPT_COLORS[currentDept],
   };
   return `<!-- Aspiron Email Signature -->
 <table cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px; border-collapse:collapse; font-family:Arial, Helvetica, sans-serif;">
@@ -260,13 +267,13 @@ function buildHtml(imgUrl) {
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse;">
               <tr>
                 <td style="padding-right:6px;">
-                  <a href="${v.linkedin}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:#FFCB76; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; font-weight:700; color:#000000;">in</a>
+                  <a href="${v.linkedin}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; font-weight:700; color:#000000;">in</a>
                 </td>
                 <td style="padding-right:6px;">
-                  <a href="${v.youtube}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:#FFCB76; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:12px; color:#000000;">&#9654;</a>
+                  <a href="${v.youtube}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:12px; color:#000000;">&#9654;</a>
                 </td>
                 <td>
-                  <a href="${v.website}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:#FFCB76; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; color:#000000;">&#8853;</a>
+                  <a href="${v.website}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; color:#000000;">&#8853;</a>
                 </td>
               </tr>
             </table>

@@ -1,4 +1,5 @@
 interface Env {
+  ASSETS: Fetcher;
   SIGNATURES: R2Bucket;
   UPLOAD_SECRET: string;
   R2_PUBLIC_BASE?: string;
@@ -6,9 +7,25 @@ interface Env {
 
 const PUBLIC_BASE_FALLBACK = "https://pub-376c070665f24d80ac2828a67b43160a.r2.dev";
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/api/upload") {
+      if (request.method === "OPTIONS") return corsPreflight();
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405 });
+      }
+      return handleUpload(request, env);
+    }
+
+    return env.ASSETS.fetch(request);
+  },
+};
+
+async function handleUpload(request: Request, env: Env): Promise<Response> {
   if (!env.UPLOAD_SECRET) {
-    return json({ error: "Server missing UPLOAD_SECRET env var" }, 500);
+    return json({ error: "Server missing UPLOAD_SECRET" }, 500);
   }
   if (request.headers.get("X-Upload-Secret") !== env.UPLOAD_SECRET) {
     return json({ error: "Unauthorized" }, 401);
@@ -25,9 +42,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const hashBuf = await crypto.subtle.digest("SHA-256", buf);
-  const hash = [...new Uint8Array(hashBuf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  const hash = [...new Uint8Array(hashBuf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
 
-  const slug = (request.headers.get("X-Slug") || "signature").replace(/[^a-z0-9-]/gi, "").toLowerCase().slice(0, 40) || "signature";
+  const slug =
+    (request.headers.get("X-Slug") || "signature")
+      .replace(/[^a-z0-9-]/gi, "")
+      .toLowerCase()
+      .slice(0, 40) || "signature";
   const key = `${slug}-${hash}.png`;
 
   await env.SIGNATURES.put(key, buf, {
@@ -39,9 +63,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const base = env.R2_PUBLIC_BASE || PUBLIC_BASE_FALLBACK;
   return json({ url: `${base}/${key}`, key });
-};
+}
 
-export const onRequestOptions: PagesFunction = async () => {
+function corsPreflight(): Response {
   return new Response(null, {
     status: 204,
     headers: {
@@ -51,11 +75,14 @@ export const onRequestOptions: PagesFunction = async () => {
       "Access-Control-Max-Age": "86400",
     },
   });
-};
+}
 
-function json(data: unknown, status = 200) {
+function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    },
   });
 }

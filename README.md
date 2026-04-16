@@ -3,42 +3,38 @@
 Web app that bakes custom fonts (Zalando Sans Expanded, Zalando Sans, IBM Plex Mono) into a PNG so email clients can't strip them. Uploads the PNG to Cloudflare R2 and generates the signature HTML with the public URL filled in.
 
 ## Stack
-- **Cloudflare Pages** — static site (`/public`)
-- **Cloudflare Pages Functions** — `/functions/api/upload.ts` writes to R2
+- **Cloudflare Worker** with **Static Assets** — serves `/public` + `/api/upload` handler
 - **Cloudflare R2** — public bucket `aspiron-signatures`
 
 ## First-time Cloudflare setup
 
-1. **R2 bucket** `aspiron-signatures` → enable public access via r2.dev subdomain (already done: `https://pub-376c070665f24d80ac2828a67b43160a.r2.dev`).
-2. **Pages project** → connect this GitHub repo. Build command: *(none)*. Output dir: `public`.
-3. **Pages → Settings → Functions → R2 bucket bindings**: add `SIGNATURES` → `aspiron-signatures` (for Production AND Preview).
-4. **Pages → Settings → Environment variables** (Production + Preview, encrypted):
-   - `UPLOAD_SECRET` = long random string.
+1. **R2 bucket** `aspiron-signatures` → public access via r2.dev enabled (`https://pub-376c070665f24d80ac2828a67b43160a.r2.dev`).
+2. **Workers project** → connect this GitHub repo. Dashboard settings:
+   - Build command: *(empty)*
+   - Deploy command: `npx wrangler deploy`
+3. **Worker → Settings → Bindings**: add **R2 bucket** binding `SIGNATURES` → `aspiron-signatures`.
+4. **Worker → Settings → Variables and Secrets**: add **Secret** `UPLOAD_SECRET` = long random string.
 5. **R2 → Settings → CORS**:
    ```json
-   [{"AllowedOrigins":["https://<your-pages-domain>.pages.dev","http://localhost:8788"],"AllowedMethods":["GET","PUT","POST","HEAD"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
+   [{"AllowedOrigins":["https://aspiron-signature.<subdomain>.workers.dev","http://localhost:8787"],"AllowedMethods":["GET","PUT","POST","HEAD"],"AllowedHeaders":["*"],"MaxAgeSeconds":3600}]
    ```
 
 ## Local dev
 
 ```bash
-npm install -g wrangler
-wrangler login
-
-# create a local secret file (gitignored)
+npm install
 echo 'UPLOAD_SECRET=localdevsecret' > .dev.vars
-
-wrangler pages dev public
+npx wrangler dev
 ```
 
-Opens on `http://localhost:8788`. The R2 binding and `UPLOAD_SECRET` come from `wrangler.toml` + `.dev.vars`. First upload, the browser prompts for the secret — enter what you put in `.dev.vars`.
+Opens on `http://localhost:8787`. R2 binding + `UPLOAD_SECRET` come from `wrangler.toml` + `.dev.vars`. First upload the browser prompts for the secret.
 
 ## Deploy
 
-Pushing to `main` on GitHub auto-deploys via Pages. Or manually:
+Pushing to `main` auto-deploys via Workers Git integration. Manual:
 
 ```bash
-wrangler pages deploy public
+npx wrangler deploy
 ```
 
 ## How it works

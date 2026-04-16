@@ -374,34 +374,22 @@ async function copyRichSignature() {
     setTimeout(() => els.status.textContent = "", 4000);
     return;
   }
-  const html = buildHtml(imgUrl);
-  els.out.value = html;
+  // Ensure preview reflects the hosted URL, then copy the rendered DOM
+  const preview = document.getElementById("live-preview");
+  preview.innerHTML = buildHtml(imgUrl);
   try {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        "text/html": new Blob([html], { type: "text/html" }),
-        "text/plain": new Blob([html], { type: "text/plain" }),
-      }),
-    ]);
-    els.status.textContent = "Copied — paste into signature editor";
-    setTimeout(() => els.status.textContent = "", 3000);
-  } catch (e) {
-    // Fallback: select a rendered node and execCommand copy
-    const tmp = document.createElement("div");
-    tmp.contentEditable = "true";
-    tmp.style.position = "fixed";
-    tmp.style.left = "-9999px";
-    tmp.innerHTML = html;
-    document.body.appendChild(tmp);
     const range = document.createRange();
-    range.selectNodeContents(tmp);
+    range.selectNodeContents(preview);
     const sel = window.getSelection();
     sel.removeAllRanges(); sel.addRange(range);
-    document.execCommand("copy");
+    const ok = document.execCommand("copy");
     sel.removeAllRanges();
-    tmp.remove();
-    els.status.textContent = "Copied (fallback)";
-    setTimeout(() => els.status.textContent = "", 3000);
+    if (!ok) throw new Error("execCommand copy failed");
+    els.status.textContent = "Copied rendered signature — paste into Gmail";
+    setTimeout(() => els.status.textContent = "", 4000);
+  } catch (e) {
+    els.status.textContent = "Copy failed: select the preview manually and Ctrl+C";
+    setTimeout(() => els.status.textContent = "", 5000);
   }
 }
 document.getElementById("btn-copy-rich").addEventListener("click", copyRichSignature);

@@ -82,16 +82,8 @@
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend>Hosted PNG</legend>
-        <label>Image URL (auto-filled after Upload — or paste manually)</label>
-        <input type="url" id="f-imgurl" placeholder="https://pub-376c070665f24d80ac2828a67b43160a.r2.dev/..." />
-        <div class="row">
-          <button id="btn-upload" class="secondary">Upload PNG to R2</button>
-          <span class="status" id="upload-status"></span>
-        </div>
-        <div class="hint">Leave empty to use a base64 data-URI (blocked by Gmail — only useful for local preview).</div>
-      </fieldset>
+      <input type="hidden" id="f-imgurl" />
+      <span class="status" id="upload-status"></span>
     </div>
 
     <div>
@@ -341,10 +333,14 @@ document.getElementById("btn-download").addEventListener("click", downloadPng);
 document.getElementById("btn-html").addEventListener("click", generateHtml);
 document.getElementById("btn-download-html").addEventListener("click", downloadHtml);
 
-async function uploadToR2() {
-  const btn = document.getElementById("btn-upload");
+let uploadTimer = null;
+function scheduleUpload() {
+  clearTimeout(uploadTimer);
+  uploadTimer = setTimeout(autoUpload, 800);
+}
+
+async function autoUpload() {
   const statusEl = document.getElementById("upload-status");
-  btn.disabled = true;
   statusEl.textContent = "Uploading…";
   try {
     const blob = await new Promise(res => els.cv.toBlob(res, "image/png"));
@@ -366,11 +362,9 @@ async function uploadToR2() {
   } catch (e) {
     statusEl.textContent = "Error: " + e.message;
   } finally {
-    btn.disabled = false;
     setTimeout(() => statusEl.textContent = "", 4000);
   }
 }
-document.getElementById("btn-upload").addEventListener("click", uploadToR2);
 
 document.querySelectorAll(".dept-btn").forEach(btn => {
   btn.addEventListener("click", async () => {
@@ -381,6 +375,7 @@ document.querySelectorAll(".dept-btn").forEach(btn => {
       bgImage = await loadImage(DEPT_BACKGROUNDS[currentDept]);
       draw();
       updateLivePreview();
+      scheduleUpload();
     } catch (e) {
       els.fontStatus.textContent = "Failed to load background for " + currentDept;
     }
@@ -427,7 +422,7 @@ document.getElementById("btn-copy-rich").addEventListener("click", copyRichSigna
 const textInputs = [els.name, els.position, els.phone, els.email];
 const linkInputs = [els.linkedin, els.youtube, els.website, els.search, els.influence, els.ventures];
 
-textInputs.forEach(i => i.addEventListener("input", () => { draw(); updateLivePreview(); }));
+textInputs.forEach(i => i.addEventListener("input", () => { draw(); updateLivePreview(); scheduleUpload(); }));
 linkInputs.forEach(i => i.addEventListener("input", updateLivePreview));
 
 (async () => {
@@ -441,7 +436,7 @@ linkInputs.forEach(i => i.addEventListener("input", updateLivePreview));
   await ensureFonts();
   draw();
   updateLivePreview();
-  setTimeout(() => { draw(); updateLivePreview(); }, 250);
+  setTimeout(() => { draw(); updateLivePreview(); scheduleUpload(); }, 250);
 })();
 </script>
 </body>

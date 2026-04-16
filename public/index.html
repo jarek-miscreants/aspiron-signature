@@ -33,6 +33,7 @@
   .status { font-size:12px; color:var(--accent); margin-left:6px; }
   details { margin-top:14px; }
   summary { cursor:pointer; font-size:13px; color:var(--muted); }
+  .dept-btn.active { background:var(--ink); color:#fff; border-color:var(--ink); }
 </style>
 </head>
 <body>
@@ -68,6 +69,17 @@
         <input type="url" id="f-influence" value="https://aspironsearch.com/influence" />
         <label>Ventures pill URL</label>
         <input type="url" id="f-ventures" value="https://aspironsearch.com/ventures" />
+      </fieldset>
+
+      <fieldset>
+        <legend>Department</legend>
+        <label>Select department (changes background)</label>
+        <div class="row" style="margin-top:6px; gap:6px;">
+          <button type="button" class="dept-btn secondary" data-dept="group">Group</button>
+          <button type="button" class="dept-btn secondary" data-dept="search">Search</button>
+          <button type="button" class="dept-btn secondary" data-dept="influence">Influence</button>
+          <button type="button" class="dept-btn secondary" data-dept="ventures">Ventures</button>
+        </div>
       </fieldset>
 
       <fieldset>
@@ -114,7 +126,13 @@
 </div>
 
 <script>
-const BG_SRC = "aspiron-signature-bg.png";
+const DEPT_BACKGROUNDS = {
+  group: "Aspiron-Email Signature-GROUP BG.png",
+  search: "Aspiron Search-Email Signature-SEARCH BG.png",
+  influence: "Aspiron Influence-Email Signature-INFLUENCE BG.png",
+  ventures: "Aspiron Ventures-Email Signature-VENTURES BG.png",
+};
+let currentDept = "group";
 const PT_TO_PX = 4/3;
 const R2_PUBLIC_BASE = "https://pub-376c070665f24d80ac2828a67b43160a.r2.dev";
 
@@ -153,7 +171,7 @@ function loadImage(src) {
 async function ensureFonts() {
   await document.fonts.ready;
   const needed = [
-    '700 24pt "Zalando Sans Expanded"',
+    '600 24pt "Zalando Sans Expanded"',
     '400 18pt "Zalando Sans"',
     '400 11px "IBM Plex Mono"',
   ];
@@ -171,8 +189,8 @@ function draw() {
   ctx.fillStyle = "#000000";
   ctx.textBaseline = "top";
 
-  // Name — Zalando Sans Expanded 24pt at (30, 30)
-  ctx.font = `700 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  // Name — Zalando Sans Expanded 24pt semi-bold at (30, 30)
+  ctx.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
   ctx.fillText(els.name.value, 30, 30);
 
   // Position — Zalando Sans Regular 18pt at (30, 60)
@@ -351,6 +369,21 @@ async function uploadToR2() {
   }
 }
 document.getElementById("btn-upload").addEventListener("click", uploadToR2);
+
+document.querySelectorAll(".dept-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    currentDept = btn.dataset.dept;
+    document.querySelectorAll(".dept-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    try {
+      bgImage = await loadImage(DEPT_BACKGROUNDS[currentDept]);
+      draw();
+      updateLivePreview();
+    } catch (e) {
+      els.fontStatus.textContent = "Failed to load background for " + currentDept;
+    }
+  });
+});
 document.getElementById("btn-copy").addEventListener("click", async () => {
   if (!els.out.value) await generateHtml();
   try {
@@ -396,8 +429,9 @@ textInputs.forEach(i => i.addEventListener("input", () => { draw(); updateLivePr
 linkInputs.forEach(i => i.addEventListener("input", updateLivePreview));
 
 (async () => {
+  document.querySelector('.dept-btn[data-dept="group"]').classList.add("active");
   try {
-    bgImage = await loadImage(BG_SRC);
+    bgImage = await loadImage(DEPT_BACKGROUNDS[currentDept]);
   } catch (e) {
     els.fontStatus.textContent = "Failed to load bg image. Serve over HTTP (not file://).";
     return;

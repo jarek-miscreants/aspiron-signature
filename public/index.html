@@ -97,7 +97,7 @@
     <div>
       <div class="preview">
         <div class="hint" style="margin-bottom:6px;">Baked PNG</div>
-        <canvas id="cv" width="600" height="150"></canvas>
+        <canvas id="cv" width="1200" height="300" style="width:600px;height:150px;"></canvas>
         <div class="hint" style="margin:14px 0 6px;">Full signature preview (PNG + overlay)</div>
         <div id="live-preview" style="border:1px solid var(--line); border-radius:4px; overflow:hidden; background:#fff;"></div>
         <div class="row">
@@ -154,7 +154,9 @@ const els = {
   fontStatus: document.getElementById("font-status"),
 };
 
+const DPR = 2;
 const ctx = els.cv.getContext("2d");
+ctx.scale(DPR, DPR);
 let bgImage = null;
 let fontsReady = false;
 
@@ -184,7 +186,7 @@ async function ensureFonts() {
 
 function draw() {
   if (!bgImage) return;
-  ctx.clearRect(0, 0, 600, 150);
+  ctx.clearRect(0, 0, 1200, 300);
   ctx.drawImage(bgImage, 0, 0, 600, 150);
   ctx.fillStyle = "#000000";
   ctx.textBaseline = "top";

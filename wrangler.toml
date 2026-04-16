@@ -1,0 +1,10 @@
+name = "aspiron-signature"
+compatibility_date = "2025-04-01"
+pages_build_output_dir = "public"
+
+[[r2_buckets]]
+binding = "SIGNATURES"
+bucket_name = "aspiron-signatures"
+
+[vars]
+R2_PUBLIC_BASE = "https://pub-376c070665f24d80ac2828a67b43160a.r2.dev"

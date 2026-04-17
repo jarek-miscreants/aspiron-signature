@@ -88,31 +88,17 @@
 
     <div>
       <div class="preview">
-        <div class="hint" style="margin-bottom:6px;">Baked PNG</div>
+        <div class="hint" style="margin-bottom:6px;">Signature preview</div>
         <canvas id="cv" width="1200" height="300" style="width:600px;height:150px;"></canvas>
-        <div class="hint" style="margin:14px 0 6px;">Full signature preview (PNG + overlay)</div>
-        <div id="live-preview" style="border:1px solid var(--line); border-radius:4px; overflow:hidden; background:#fff;"></div>
+        <div id="live-preview" style="position:absolute; left:-9999px; top:-9999px;"></div>
         <div class="row">
-          <button id="btn-download">Download PNG</button>
-          <button id="btn-html" class="secondary">Generate HTML</button>
+          <button id="btn-copy-rich">Copy for Email</button>
+          <button id="btn-download" class="secondary">Download PNG</button>
           <button id="btn-download-html" class="secondary">Download HTML</button>
           <span class="status" id="status"></span>
         </div>
-        <details>
-          <summary>Font debug</summary>
-          <div class="hint" id="font-status">Loading fonts…</div>
-        </details>
+        <div class="hint" id="font-status" style="display:none;"></div>
       </div>
-
-      <fieldset style="margin-top:18px;">
-        <legend>Signature HTML</legend>
-        <textarea id="out" readonly placeholder="Click ‘Generate HTML’ after filling fields."></textarea>
-        <div class="row">
-          <button id="btn-copy-rich">Copy for Email</button>
-          <button id="btn-copy" class="secondary">Copy HTML source</button>
-        </div>
-        <div class="hint">“Copy for Email” pastes as a rendered signature into Gmail / Outlook signature editors. “Copy HTML source” pastes raw code.</div>
-      </fieldset>
     </div>
   </div>
 </div>
@@ -147,7 +133,6 @@ const els = {
   ventures: document.getElementById("f-ventures"),
   imgurl: document.getElementById("f-imgurl"),
   cv: document.getElementById("cv"),
-  out: document.getElementById("out"),
   status: document.getElementById("status"),
   fontStatus: document.getElementById("font-status"),
 };
@@ -309,14 +294,9 @@ function buildHtml(imgUrl) {
 </table>`;
 }
 
-async function generateHtml() {
-  let url = els.imgurl.value.trim();
-  if (!url) {
-    url = els.cv.toDataURL("image/png");
-  }
-  els.out.value = buildHtml(url);
-  els.status.textContent = "HTML generated";
-  setTimeout(() => els.status.textContent = "", 2000);
+function currentHtml() {
+  const url = els.imgurl.value.trim() || els.cv.toDataURL("image/png");
+  return buildHtml(url);
 }
 
 function updateLivePreview() {
@@ -326,8 +306,7 @@ function updateLivePreview() {
 }
 
 function downloadHtml() {
-  if (!els.out.value) generateHtml();
-  const blob = new Blob([els.out.value], { type: "text/html;charset=utf-8" });
+  const blob = new Blob([currentHtml()], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -337,7 +316,6 @@ function downloadHtml() {
 }
 
 document.getElementById("btn-download").addEventListener("click", downloadPng);
-document.getElementById("btn-html").addEventListener("click", generateHtml);
 document.getElementById("btn-download-html").addEventListener("click", downloadHtml);
 
 let uploadTimer = null;
@@ -365,7 +343,6 @@ async function autoUpload() {
     const { url } = await res.json();
     els.imgurl.value = url;
     statusEl.textContent = "Uploaded ✓";
-    generateHtml();
   } catch (e) {
     statusEl.textContent = "Error: " + e.message;
   } finally {
@@ -388,17 +365,6 @@ document.querySelectorAll(".dept-btn").forEach(btn => {
     }
   });
 });
-document.getElementById("btn-copy").addEventListener("click", async () => {
-  if (!els.out.value) await generateHtml();
-  try {
-    await navigator.clipboard.writeText(els.out.value);
-    els.status.textContent = "Copied HTML source";
-    setTimeout(() => els.status.textContent = "", 2000);
-  } catch {
-    els.out.select(); document.execCommand("copy");
-  }
-});
-
 async function copyRichSignature() {
   const imgUrl = els.imgurl.value.trim();
   if (!imgUrl) {

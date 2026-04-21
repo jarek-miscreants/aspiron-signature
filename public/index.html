@@ -92,7 +92,8 @@
         <div id="live-preview" style="border:1px solid var(--line); border-radius:4px; overflow:auto; background:#fff;"></div>
         <canvas id="cv" width="1200" height="300" style="position:absolute; left:-9999px; top:-9999px; width:600px; height:150px;"></canvas>
         <div class="row">
-          <button id="btn-copy-rich">Copy for Email</button>
+          <button id="btn-copy-rich">Copy for Gmail</button>
+          <button id="btn-copy-outlook">Copy for Outlook</button>
           <button id="btn-download" class="secondary">Download PNG</button>
           <button id="btn-download-html" class="secondary">Download HTML</button>
           <span class="status" id="status"></span>
@@ -407,6 +408,165 @@ async function copyRichSignature() {
   }
 }
 document.getElementById("btn-copy-rich").addEventListener("click", copyRichSignature);
+
+// -- Outlook path: flat PNG (bg + text + icons + pills) + image map ------------
+const CONTENT_RIGHT = 556;
+const ICON_Y = 72;
+const ICON_SIZE = 28;
+const ICON_GAP = 6;
+const ICON_RADIUS = 6;
+const PILL_Y = 110;
+const PILL_PAD_X = 16;
+const PILL_PAD_Y = 5;
+const PILL_RADIUS = 9;
+const PILL_FONT_SIZE = 9;
+const PILL_GAP = 8;
+
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+  c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+  c.closePath();
+}
+
+async function renderFullBaked() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 300;
+  const c = canvas.getContext("2d");
+  c.scale(DPR, DPR);
+
+  // Background + baked text (mirrors draw())
+  c.drawImage(bgImage, 0, 0, 600, 150);
+  c.fillStyle = "#000000";
+  c.textBaseline = "top";
+  c.textAlign = "left";
+  c.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  c.fillText(els.name.value, 30, 30);
+  c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
+  c.fillText(els.position.value, 30, 60);
+  const phoneLabel = "Phone: ";
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText(phoneLabel, 30, 106);
+  const phoneLabelW = c.measureText(phoneLabel).width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.phone.value, 30 + phoneLabelW, 106);
+  const emailLabel = "Email: ";
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText(emailLabel, 30, 120);
+  const emailLabelW = c.measureText(emailLabel).width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.email.value, 30 + emailLabelW, 120);
+
+  // Social icons (right-to-left)
+  const iconBg = DEPT_COLORS[currentDept];
+  const icons = [
+    { text: "in",       font: 'bold 13px Arial, Helvetica, sans-serif', href: els.linkedin.value },
+    { text: "▶",   font: '12px Arial, Helvetica, sans-serif',      href: els.youtube.value  },
+    { text: "⊕",   font: '13px Arial, Helvetica, sans-serif',      href: els.website.value  },
+  ];
+  const regions = [];
+  let iconRight = CONTENT_RIGHT;
+  for (let i = icons.length - 1; i >= 0; i--) {
+    const x = iconRight - ICON_SIZE;
+    const y = ICON_Y;
+    c.fillStyle = iconBg;
+    roundRect(c, x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
+    c.fill();
+    c.fillStyle = "#000000";
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.font = icons[i].font;
+    c.fillText(icons[i].text, x + ICON_SIZE / 2, y + ICON_SIZE / 2 + 1);
+    regions.unshift({ href: icons[i].href, coords: [x, y, x + ICON_SIZE, y + ICON_SIZE] });
+    iconRight = x - (i > 0 ? ICON_GAP : 0);
+  }
+
+  // Pills (right-to-left)
+  const pills = [
+    { bg: "#D8923E", text: "SEARCH",    href: els.search.value    },
+    { bg: "#FFA57E", text: "INFLUENCE", href: els.influence.value },
+    { bg: "#EECAB0", text: "VENTURES",  href: els.ventures.value  },
+  ];
+  c.font = `600 ${PILL_FONT_SIZE}px Arial, Helvetica, sans-serif`;
+  try { c.letterSpacing = "0.8px"; } catch (e) {}
+  const pillH = PILL_FONT_SIZE + PILL_PAD_Y * 2 + 4;
+  const pillSizes = pills.map(p => ({
+    ...p,
+    w: Math.ceil(c.measureText(p.text).width + PILL_PAD_X * 2),
+    h: pillH,
+  }));
+  let pillRight = CONTENT_RIGHT;
+  for (let i = pillSizes.length - 1; i >= 0; i--) {
+    const p = pillSizes[i];
+    const x = pillRight - p.w;
+    const y = PILL_Y;
+    c.fillStyle = p.bg;
+    roundRect(c, x, y, p.w, p.h, PILL_RADIUS);
+    c.fill();
+    c.fillStyle = "#000000";
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.font = `600 ${PILL_FONT_SIZE}px Arial, Helvetica, sans-serif`;
+    c.fillText(p.text, x + p.w / 2, y + p.h / 2 + 1);
+    regions.push({ href: p.href, coords: [x, y, x + p.w, y + p.h] });
+    pillRight = x - (i > 0 ? PILL_GAP : 0);
+  }
+  try { c.letterSpacing = "0px"; } catch (e) {}
+
+  return { canvas, regions };
+}
+
+function buildHtmlImageMap(imgUrl, regions) {
+  const mapName = "aspiron-sig";
+  const areas = regions.map(r =>
+    `<area shape="rect" coords="${r.coords.map(n => Math.round(n)).join(",")}" href="${escapeAttr(r.href)}" target="_blank" alt="" />`
+  ).join("\n  ");
+  return `<!-- Aspiron Email Signature (Outlook) -->
+<img src="${escapeAttr(imgUrl)}" usemap="#${mapName}" width="600" height="150" alt="Aspiron Signature" border="0" style="display:block; border:0; outline:0; text-decoration:none;" />
+<map name="${mapName}">
+  ${areas}
+</map>`;
+}
+
+async function uploadBlob(blob, slug) {
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "image/png", "X-Slug": slug },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  const { url } = await res.json();
+  return url;
+}
+
+async function copyForOutlook() {
+  els.status.textContent = "Baking full PNG…";
+  try {
+    await ensureFonts();
+    if (!bgImage) throw new Error("Background not loaded");
+    const { canvas, regions } = await renderFullBaked();
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    const url = await uploadBlob(blob, slugify(els.name.value) + "-outlook");
+    const html = buildHtmlImageMap(url, regions);
+    const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" }),
+      }),
+    ]);
+    els.status.textContent = "Copied — paste into Outlook";
+    setTimeout(() => els.status.textContent = "", 4000);
+  } catch (e) {
+    els.status.textContent = "Outlook copy failed: " + e.message;
+    setTimeout(() => els.status.textContent = "", 5000);
+  }
+}
+document.getElementById("btn-copy-outlook").addEventListener("click", copyForOutlook);
 
 const textInputs = [els.name, els.position, els.phone, els.email];
 const linkInputs = [els.linkedin, els.youtube, els.website, els.search, els.influence, els.ventures];

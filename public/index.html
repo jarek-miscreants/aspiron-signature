@@ -432,15 +432,19 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
+const SIG_W = 600;
+const SIG_H = 150;
+const PILL_H = PILL_FONT_SIZE + PILL_PAD_Y * 2 + 4;
+
 async function renderFullBaked() {
   const canvas = document.createElement("canvas");
-  canvas.width = 1200;
-  canvas.height = 300;
+  canvas.width = SIG_W * DPR;
+  canvas.height = SIG_H * DPR;
   const c = canvas.getContext("2d");
   c.scale(DPR, DPR);
 
   // Background + baked text (mirrors draw())
-  c.drawImage(bgImage, 0, 0, 600, 150);
+  c.drawImage(bgImage, 0, 0, SIG_W, SIG_H);
   c.fillStyle = "#000000";
   c.textBaseline = "top";
   c.textAlign = "left";
@@ -448,88 +452,116 @@ async function renderFullBaked() {
   c.fillText(els.name.value, 30, 30);
   c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
   c.fillText(els.position.value, 30, 60);
-  const phoneLabel = "Phone: ";
   c.font = `600 11px "IBM Plex Mono", monospace`;
-  c.fillText(phoneLabel, 30, 106);
-  const phoneLabelW = c.measureText(phoneLabel).width;
+  c.fillText("Phone: ", 30, 106);
+  const phoneLabelW = c.measureText("Phone: ").width;
   c.font = `400 11px "IBM Plex Mono", monospace`;
   c.fillText(els.phone.value, 30 + phoneLabelW, 106);
-  const emailLabel = "Email: ";
   c.font = `600 11px "IBM Plex Mono", monospace`;
-  c.fillText(emailLabel, 30, 120);
-  const emailLabelW = c.measureText(emailLabel).width;
+  c.fillText("Email: ", 30, 120);
+  const emailLabelW = c.measureText("Email: ").width;
   c.font = `400 11px "IBM Plex Mono", monospace`;
   c.fillText(els.email.value, 30 + emailLabelW, 120);
 
-  // Social icons (right-to-left)
+  // Icon positions (left-to-right after computing right-aligned)
   const iconBg = DEPT_COLORS[currentDept];
-  const icons = [
-    { text: "in",       font: 'bold 13px Arial, Helvetica, sans-serif', href: els.linkedin.value },
-    { text: "▶",   font: '12px Arial, Helvetica, sans-serif',      href: els.youtube.value  },
-    { text: "⊕",   font: '13px Arial, Helvetica, sans-serif',      href: els.website.value  },
+  const iconDefs = [
+    { text: "in", font: 'bold 13px Arial, Helvetica, sans-serif', href: els.linkedin.value },
+    { text: "▶",  font: '12px Arial, Helvetica, sans-serif',      href: els.youtube.value  },
+    { text: "⊕",  font: '13px Arial, Helvetica, sans-serif',      href: els.website.value  },
   ];
-  const regions = [];
-  let iconRight = CONTENT_RIGHT;
-  for (let i = icons.length - 1; i >= 0; i--) {
-    const x = iconRight - ICON_SIZE;
-    const y = ICON_Y;
+  const icons = [];
+  let right = CONTENT_RIGHT;
+  for (let i = iconDefs.length - 1; i >= 0; i--) {
+    const x = right - ICON_SIZE;
+    icons.unshift({ x, y: ICON_Y, w: ICON_SIZE, h: ICON_SIZE, href: iconDefs[i].href, def: iconDefs[i] });
+    right = x - ICON_GAP;
+  }
+  for (const it of icons) {
     c.fillStyle = iconBg;
-    roundRect(c, x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
+    roundRect(c, it.x, it.y, it.w, it.h, ICON_RADIUS);
     c.fill();
     c.fillStyle = "#000000";
     c.textAlign = "center";
     c.textBaseline = "middle";
-    c.font = icons[i].font;
-    c.fillText(icons[i].text, x + ICON_SIZE / 2, y + ICON_SIZE / 2 + 1);
-    regions.unshift({ href: icons[i].href, coords: [x, y, x + ICON_SIZE, y + ICON_SIZE] });
-    iconRight = x - (i > 0 ? ICON_GAP : 0);
+    c.font = it.def.font;
+    c.fillText(it.def.text, it.x + it.w / 2, it.y + it.h / 2 + 1);
   }
 
-  // Pills (right-to-left)
-  const pills = [
+  // Pill positions
+  const pillDefs = [
     { bg: "#D8923E", text: "SEARCH",    href: els.search.value    },
     { bg: "#FFA57E", text: "INFLUENCE", href: els.influence.value },
     { bg: "#EECAB0", text: "VENTURES",  href: els.ventures.value  },
   ];
   c.font = `600 ${PILL_FONT_SIZE}px Arial, Helvetica, sans-serif`;
   try { c.letterSpacing = "0.8px"; } catch (e) {}
-  const pillH = PILL_FONT_SIZE + PILL_PAD_Y * 2 + 4;
-  const pillSizes = pills.map(p => ({
-    ...p,
-    w: Math.ceil(c.measureText(p.text).width + PILL_PAD_X * 2),
-    h: pillH,
-  }));
-  let pillRight = CONTENT_RIGHT;
-  for (let i = pillSizes.length - 1; i >= 0; i--) {
-    const p = pillSizes[i];
-    const x = pillRight - p.w;
-    const y = PILL_Y;
-    c.fillStyle = p.bg;
-    roundRect(c, x, y, p.w, p.h, PILL_RADIUS);
+  const pills = [];
+  right = CONTENT_RIGHT;
+  for (let i = pillDefs.length - 1; i >= 0; i--) {
+    const w = Math.ceil(c.measureText(pillDefs[i].text).width + PILL_PAD_X * 2);
+    const x = right - w;
+    pills.unshift({ x, y: PILL_Y, w, h: PILL_H, href: pillDefs[i].href, def: pillDefs[i] });
+    right = x - PILL_GAP;
+  }
+  for (const p of pills) {
+    c.fillStyle = p.def.bg;
+    roundRect(c, p.x, p.y, p.w, p.h, PILL_RADIUS);
     c.fill();
     c.fillStyle = "#000000";
     c.textAlign = "center";
     c.textBaseline = "middle";
     c.font = `600 ${PILL_FONT_SIZE}px Arial, Helvetica, sans-serif`;
-    c.fillText(p.text, x + p.w / 2, y + p.h / 2 + 1);
-    regions.push({ href: p.href, coords: [x, y, x + p.w, y + p.h] });
-    pillRight = x - (i > 0 ? PILL_GAP : 0);
+    c.fillText(p.def.text, p.x + p.w / 2, p.y + p.h / 2 + 1);
   }
   try { c.letterSpacing = "0px"; } catch (e) {}
 
-  return { canvas, regions };
+  return { canvas, icons, pills };
 }
 
-function buildHtmlImageMap(imgUrl, regions) {
-  const mapName = "aspiron-sig";
-  const areas = regions.map(r =>
-    `<area shape="rect" coords="${r.coords.map(n => Math.round(n)).join(",")}" href="${escapeAttr(r.href)}" target="_blank" alt="" />`
-  ).join("\n  ");
-  return `<!-- Aspiron Email Signature (Outlook) -->
-<img src="${escapeAttr(imgUrl)}" usemap="#${mapName}" width="600" height="150" alt="Aspiron Signature" border="0" style="display:block; border:0; outline:0; text-decoration:none;" />
-<map name="${mapName}">
-  ${areas}
-</map>`;
+// Build grid of rows, where each row is { y, h, cells:[{x, w, href?}] }.
+// Non-clickable cells are plain tiles; clickable cells will be wrapped in <a>.
+function buildTileGrid(icons, pills) {
+  const rows = [];
+  rows.push({ y: 0, h: ICON_Y, cells: [{ x: 0, w: SIG_W }] });
+  const iconCells = [];
+  let cx = 0;
+  for (const it of icons) {
+    if (it.x > cx) iconCells.push({ x: cx, w: it.x - cx });
+    iconCells.push({ x: it.x, w: it.w, href: it.href });
+    cx = it.x + it.w;
+  }
+  if (cx < SIG_W) iconCells.push({ x: cx, w: SIG_W - cx });
+  rows.push({ y: ICON_Y, h: ICON_SIZE, cells: iconCells });
+
+  if (PILL_Y > ICON_Y + ICON_SIZE) {
+    rows.push({ y: ICON_Y + ICON_SIZE, h: PILL_Y - (ICON_Y + ICON_SIZE), cells: [{ x: 0, w: SIG_W }] });
+  }
+
+  const pillCells = [];
+  cx = 0;
+  for (const p of pills) {
+    if (p.x > cx) pillCells.push({ x: cx, w: p.x - cx });
+    pillCells.push({ x: p.x, w: p.w, href: p.href });
+    cx = p.x + p.w;
+  }
+  if (cx < SIG_W) pillCells.push({ x: cx, w: SIG_W - cx });
+  rows.push({ y: PILL_Y, h: PILL_H, cells: pillCells });
+
+  const bottomY = PILL_Y + PILL_H;
+  if (bottomY < SIG_H) {
+    rows.push({ y: bottomY, h: SIG_H - bottomY, cells: [{ x: 0, w: SIG_W }] });
+  }
+  return rows;
+}
+
+async function sliceTileBlob(srcCanvas, x, y, w, h) {
+  const sub = document.createElement("canvas");
+  sub.width = w * DPR;
+  sub.height = h * DPR;
+  const c = sub.getContext("2d");
+  c.drawImage(srcCanvas, x * DPR, y * DPR, w * DPR, h * DPR, 0, 0, sub.width, sub.height);
+  return await new Promise(res => sub.toBlob(res, "image/png"));
 }
 
 async function uploadBlob(blob, slug) {
@@ -543,15 +575,52 @@ async function uploadBlob(blob, slug) {
   return url;
 }
 
+function buildTiledHtml(rows) {
+  const td = 'style="padding:0; margin:0; line-height:0; font-size:0;"';
+  const imgStyle = 'style="display:block; border:0;"';
+  const rowsHtml = rows.map(row => {
+    if (row.cells.length === 1) {
+      const c = row.cells[0];
+      const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
+      return `  <tr><td ${td}>${img}</td></tr>`;
+    }
+    const cells = row.cells.map(c => {
+      const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
+      const body = c.href
+        ? `<a href="${escapeAttr(c.href)}" target="_blank" style="display:block; line-height:0; font-size:0; text-decoration:none;">${img}</a>`
+        : img;
+      return `<td ${td}>${body}</td>`;
+    }).join("");
+    return `  <tr><td ${td}><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${cells}</tr></table></td></tr>`;
+  }).join("\n");
+  return `<!-- Aspiron Email Signature (Outlook, tiled) -->
+<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="width:${SIG_W}px; border-collapse:collapse;">
+${rowsHtml}
+</table>`;
+}
+
 async function copyForOutlook() {
-  els.status.textContent = "Baking full PNG…";
+  els.status.textContent = "Baking tiles…";
   try {
     await ensureFonts();
     if (!bgImage) throw new Error("Background not loaded");
-    const { canvas, regions } = await renderFullBaked();
-    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-    const url = await uploadBlob(blob, slugify(els.name.value) + "-outlook");
-    const html = buildHtmlImageMap(url, regions);
+    const { canvas, icons, pills } = await renderFullBaked();
+    const rows = buildTileGrid(icons, pills);
+
+    const jobs = [];
+    for (const row of rows) {
+      for (const cell of row.cells) {
+        jobs.push({ row, cell });
+      }
+    }
+    const base = slugify(els.name.value) + "-ol";
+    els.status.textContent = `Uploading ${jobs.length} tiles…`;
+    await Promise.all(jobs.map(async ({ row, cell }) => {
+      const blob = await sliceTileBlob(canvas, cell.x, row.y, cell.w, row.h);
+      cell.url = await uploadBlob(blob, `${base}-${cell.x}x${row.y}`);
+    }));
+
+    const html = buildTiledHtml(rows);
     const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
     await navigator.clipboard.write([
       new ClipboardItem({

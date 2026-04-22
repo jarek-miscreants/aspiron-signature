@@ -519,40 +519,50 @@ async function renderFullBaked() {
   return { canvas, icons, pills };
 }
 
-// Build grid of rows, where each row is { y, h, cells:[{x, w, href?}] }.
-// Non-clickable cells are plain tiles; clickable cells will be wrapped in <a>.
+// Split into LEFT column (single tile spanning full height — contains all baked
+// text + background) and RIGHT column (sliced by rows into clickable cells).
+// Horizontal slicing through phone/email text broke on mobile Outlook when the
+// signature was downscaled: sub-pixel rounding at row seams cut text glyphs.
+// Keeping text in one uncut tile eliminates that class of failure.
 function buildTileGrid(icons, pills) {
-  const rows = [];
-  rows.push({ y: 0, h: ICON_Y, cells: [{ x: 0, w: SIG_W }] });
-  const iconCells = [];
-  let cx = 0;
-  for (const it of icons) {
-    if (it.x > cx) iconCells.push({ x: cx, w: it.x - cx });
-    iconCells.push({ x: it.x, w: it.w, href: it.href });
-    cx = it.x + it.w;
-  }
-  if (cx < SIG_W) iconCells.push({ x: cx, w: SIG_W - cx });
-  rows.push({ y: ICON_Y, h: ICON_SIZE, cells: iconCells });
+  const split = Math.min(icons[0].x, pills[0].x);
+  const rightW = SIG_W - split;
 
+  const sliceRow = (items) => {
+    const cells = [];
+    let cx = 0;
+    for (const it of items) {
+      const relX = it.x - split;
+      if (relX > cx) cells.push({ x: cx, w: relX - cx });
+      cells.push({ x: relX, w: it.w, href: it.href });
+      cx = relX + it.w;
+    }
+    if (cx < rightW) cells.push({ x: cx, w: rightW - cx });
+    return cells;
+  };
+
+  const rightRows = [];
+  rightRows.push({ y: 0, h: ICON_Y, cells: [{ x: 0, w: rightW }] });
+  rightRows.push({ y: ICON_Y, h: ICON_SIZE, cells: sliceRow(icons) });
   if (PILL_Y > ICON_Y + ICON_SIZE) {
-    rows.push({ y: ICON_Y + ICON_SIZE, h: PILL_Y - (ICON_Y + ICON_SIZE), cells: [{ x: 0, w: SIG_W }] });
+    rightRows.push({
+      y: ICON_Y + ICON_SIZE,
+      h: PILL_Y - (ICON_Y + ICON_SIZE),
+      cells: [{ x: 0, w: rightW }],
+    });
   }
-
-  const pillCells = [];
-  cx = 0;
-  for (const p of pills) {
-    if (p.x > cx) pillCells.push({ x: cx, w: p.x - cx });
-    pillCells.push({ x: p.x, w: p.w, href: p.href });
-    cx = p.x + p.w;
-  }
-  if (cx < SIG_W) pillCells.push({ x: cx, w: SIG_W - cx });
-  rows.push({ y: PILL_Y, h: PILL_H, cells: pillCells });
-
+  rightRows.push({ y: PILL_Y, h: PILL_H, cells: sliceRow(pills) });
   const bottomY = PILL_Y + PILL_H;
   if (bottomY < SIG_H) {
-    rows.push({ y: bottomY, h: SIG_H - bottomY, cells: [{ x: 0, w: SIG_W }] });
+    rightRows.push({ y: bottomY, h: SIG_H - bottomY, cells: [{ x: 0, w: rightW }] });
   }
-  return rows;
+
+  return {
+    leftTile: { x: 0, y: 0, w: split, h: SIG_H },
+    rightRows,
+    split,
+    rightW,
+  };
 }
 
 async function sliceTileBlob(srcCanvas, x, y, w, h) {
@@ -575,27 +585,39 @@ async function uploadBlob(blob, slug) {
   return url;
 }
 
-function buildTiledHtml(rows) {
+function buildTiledHtml(grid) {
   const td = 'style="padding:0; margin:0; line-height:0; font-size:0;"';
-  const imgStyle = 'style="display:block; border:0;"';
-  const rowsHtml = rows.map(row => {
+  const imgStyle = 'style="display:block; border:0; outline:0;"';
+  const aStyle = 'style="display:block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0;"';
+
+  const leftImg = `<img src="${escapeAttr(grid.leftTile.url)}" width="${grid.leftTile.w}" height="${grid.leftTile.h}" ${imgStyle} border="0" alt="" />`;
+
+  const rightRowsHtml = grid.rightRows.map(row => {
     if (row.cells.length === 1) {
       const c = row.cells[0];
       const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
-      return `  <tr><td ${td}>${img}</td></tr>`;
+      return `      <tr><td ${td}>${img}</td></tr>`;
     }
-    const cells = row.cells.map(c => {
+    const cellsHtml = row.cells.map(c => {
       const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
       const body = c.href
-        ? `<a href="${escapeAttr(c.href)}" target="_blank" style="display:block; line-height:0; font-size:0; text-decoration:none;">${img}</a>`
+        ? `<a href="${escapeAttr(c.href)}" target="_blank" ${aStyle}>${img}</a>`
         : img;
       return `<td ${td}>${body}</td>`;
     }).join("");
-    return `  <tr><td ${td}><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${cells}</tr></table></td></tr>`;
+    return `      <tr><td ${td}><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${cellsHtml}</tr></table></td></tr>`;
   }).join("\n");
-  return `<!-- Aspiron Email Signature (Outlook, tiled) -->
+
+  return `<!-- Aspiron Email Signature (Outlook, column-sliced) -->
 <table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="width:${SIG_W}px; border-collapse:collapse;">
-${rowsHtml}
+  <tr>
+    <td ${td} valign="top">${leftImg}</td>
+    <td ${td} valign="top">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+${rightRowsHtml}
+      </table>
+    </td>
+  </tr>
 </table>`;
 }
 
@@ -605,22 +627,33 @@ async function copyForOutlook() {
     await ensureFonts();
     if (!bgImage) throw new Error("Background not loaded");
     const { canvas, icons, pills } = await renderFullBaked();
-    const rows = buildTileGrid(icons, pills);
+    const grid = buildTileGrid(icons, pills);
 
-    const jobs = [];
-    for (const row of rows) {
-      for (const cell of row.cells) {
-        jobs.push({ row, cell });
-      }
-    }
+    const jobs = [{
+      tile: grid.leftTile,
+      sx: grid.leftTile.x, sy: grid.leftTile.y,
+      sw: grid.leftTile.w, sh: grid.leftTile.h,
+      tag: "left",
+    }];
+    grid.rightRows.forEach((row, ri) => {
+      row.cells.forEach((cell, ci) => {
+        jobs.push({
+          tile: cell,
+          sx: grid.split + cell.x, sy: row.y,
+          sw: cell.w, sh: row.h,
+          tag: `r${ri}c${ci}`,
+        });
+      });
+    });
+
     const base = slugify(els.name.value) + "-ol";
     els.status.textContent = `Uploading ${jobs.length} tiles…`;
-    await Promise.all(jobs.map(async ({ row, cell }) => {
-      const blob = await sliceTileBlob(canvas, cell.x, row.y, cell.w, row.h);
-      cell.url = await uploadBlob(blob, `${base}-${cell.x}x${row.y}`);
+    await Promise.all(jobs.map(async (j) => {
+      const blob = await sliceTileBlob(canvas, j.sx, j.sy, j.sw, j.sh);
+      j.tile.url = await uploadBlob(blob, `${base}-${j.tag}`);
     }));
 
-    const html = buildTiledHtml(rows);
+    const html = buildTiledHtml(grid);
     const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
     await navigator.clipboard.write([
       new ClipboardItem({

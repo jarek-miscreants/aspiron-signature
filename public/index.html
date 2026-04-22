@@ -586,37 +586,43 @@ async function uploadBlob(blob, slug) {
 }
 
 function buildTiledHtml(grid) {
-  const td = 'style="padding:0; margin:0; line-height:0; font-size:0;"';
-  const imgStyle = 'style="display:block; border:0; outline:0;"';
-  const aStyle = 'style="display:block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0;"';
+  // Mac / Word-engine Outlook is strict: width/height must be inline CSS too
+  // (not just HTML attrs), TDs need explicit widths, and tables need
+  // border-spacing:0 + mso-table-lspace/rspace:0 to suppress phantom padding
+  // between cells that otherwise breaks seam alignment.
+  const tdBase = 'padding:0; margin:0; line-height:0; font-size:0; mso-line-height-rule:exactly;';
+  const tblBase = 'border-collapse:collapse; border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt;';
+  const aBase = 'display:block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0;';
 
-  const leftImg = `<img src="${escapeAttr(grid.leftTile.url)}" width="${grid.leftTile.w}" height="${grid.leftTile.h}" ${imgStyle} border="0" alt="" />`;
+  const img = (url, w, h) =>
+    `<img src="${escapeAttr(url)}" width="${w}" height="${h}" border="0" alt="" style="display:block; border:0; outline:0; width:${w}px; height:${h}px; max-width:${w}px; -ms-interpolation-mode:bicubic;" />`;
+  const td = (w, h, inner) =>
+    `<td width="${w}" height="${h}" style="${tdBase} width:${w}px; height:${h}px;" valign="top">${inner}</td>`;
+
+  const leftImg = img(grid.leftTile.url, grid.leftTile.w, grid.leftTile.h);
 
   const rightRowsHtml = grid.rightRows.map(row => {
     if (row.cells.length === 1) {
       const c = row.cells[0];
-      const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
-      return `      <tr><td ${td}>${img}</td></tr>`;
+      return `      <tr>${td(c.w, row.h, img(c.url, c.w, row.h))}</tr>`;
     }
     const cellsHtml = row.cells.map(c => {
-      const img = `<img src="${escapeAttr(c.url)}" width="${c.w}" height="${row.h}" ${imgStyle} border="0" alt="" />`;
+      const imgEl = img(c.url, c.w, row.h);
       const body = c.href
-        ? `<a href="${escapeAttr(c.href)}" target="_blank" ${aStyle}>${img}</a>`
-        : img;
-      return `<td ${td}>${body}</td>`;
+        ? `<a href="${escapeAttr(c.href)}" target="_blank" style="${aBase} width:${c.w}px; height:${row.h}px;">${imgEl}</a>`
+        : imgEl;
+      return td(c.w, row.h, body);
     }).join("");
-    return `      <tr><td ${td}><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${cellsHtml}</tr></table></td></tr>`;
+    return `      <tr>${td(grid.rightW, row.h, `<table cellpadding="0" cellspacing="0" border="0" width="${grid.rightW}" style="${tblBase} width:${grid.rightW}px;"><tr>${cellsHtml}</tr></table>`)}</tr>`;
   }).join("\n");
 
   return `<!-- Aspiron Email Signature (Outlook, column-sliced) -->
-<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="width:${SIG_W}px; border-collapse:collapse;">
+<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="${tblBase} width:${SIG_W}px; table-layout:fixed;">
   <tr>
-    <td ${td} valign="top">${leftImg}</td>
-    <td ${td} valign="top">
-      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+    ${td(grid.leftTile.w, grid.leftTile.h, leftImg)}
+    ${td(grid.rightW, SIG_H, `<table cellpadding="0" cellspacing="0" border="0" width="${grid.rightW}" style="${tblBase} width:${grid.rightW}px;">
 ${rightRowsHtml}
-      </table>
-    </td>
+    </table>`)}
   </tr>
 </table>`;
 }

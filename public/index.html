@@ -204,15 +204,25 @@ function slugify(s) {
   return (s || "signature").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function downloadPng() {
-  els.cv.toBlob(blob => {
+async function downloadPng() {
+  els.status.textContent = "Baking PNG…";
+  try {
+    await ensureFonts();
+    if (!bgImage) throw new Error("Background not loaded");
+    const { canvas } = await renderFullBaked();
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `aspiron-${slugify(els.name.value)}.png`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, "image/png");
+    els.status.textContent = "Downloaded";
+    setTimeout(() => els.status.textContent = "", 3000);
+  } catch (e) {
+    els.status.textContent = "Download failed: " + e.message;
+    setTimeout(() => els.status.textContent = "", 5000);
+  }
 }
 
 function escapeHtml(s) {

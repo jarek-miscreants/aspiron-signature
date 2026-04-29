@@ -275,12 +275,14 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">
               <tr>
-                <td width="28" height="28" style="width:28px; height:28px; padding:0 6px 0 0; ${tdReset}">
+                <td width="28" height="28" style="width:28px; height:28px; padding:0; ${tdReset}">
                   <a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700)}">in</a>
                 </td>
-                <td width="28" height="28" style="width:28px; height:28px; padding:0 6px 0 0; ${tdReset}">
+                <td width="6" height="28" style="width:6px; min-width:6px; height:28px; padding:0; margin:0; border:0; font-size:1px; line-height:28px; mso-line-height-rule:exactly;">&nbsp;</td>
+                <td width="28" height="28" style="width:28px; height:28px; padding:0; ${tdReset}">
                   <a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400)}">&#9654;</a>
                 </td>
+                <td width="6" height="28" style="width:6px; min-width:6px; height:28px; padding:0; margin:0; border:0; font-size:1px; line-height:28px; mso-line-height-rule:exactly;">&nbsp;</td>
                 <td width="28" height="28" style="width:28px; height:28px; ${tdReset}">
                   <a href="${v.website}" target="_blank" style="${iconA(v.iconBg, 13, 400)}">&#8853;</a>
                 </td>
@@ -293,13 +295,15 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">
               <tr>
-                <td style="padding:0 6px 0 0; ${tdReset}">
+                <td style="padding:0; ${tdReset}">
                   <a href="${v.search}" target="_blank" style="${pillA('#D8923E')}">SEARCH</a>
                 </td>
-                <td style="padding:0 6px 0 0; ${tdReset}">
+                <td width="6" style="width:6px; min-width:6px; padding:0; margin:0; border:0; font-size:1px; line-height:1px; mso-line-height-rule:exactly;">&nbsp;</td>
+                <td style="padding:0; ${tdReset}">
                   <a href="${v.influence}" target="_blank" style="${pillA('#FFA57E')}">INFLUENCE</a>
                 </td>
-                <td style="${tdReset}">
+                <td width="6" style="width:6px; min-width:6px; padding:0; margin:0; border:0; font-size:1px; line-height:1px; mso-line-height-rule:exactly;">&nbsp;</td>
+                <td style="padding:0; ${tdReset}">
                   <a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0')}">VENTURES</a>
                 </td>
               </tr>
@@ -433,7 +437,10 @@ async function copyRichSignature() {
 document.getElementById("btn-copy-rich").addEventListener("click", copyRichSignature);
 
 // -- Outlook path: flat PNG (bg + text + icons + pills) + image map ------------
-const CONTENT_RIGHT = 556;
+// Right edge for icons/pills, matching the Gmail HTML right column right-edge
+// (600px outer table - 16px right padding = 584). Keeping this value in sync
+// with the Gmail path is what makes the two outputs visually identical.
+const CONTENT_RIGHT = 584;
 const ICON_Y = 72;
 const ICON_SIZE = 28;
 const ICON_GAP = 6;

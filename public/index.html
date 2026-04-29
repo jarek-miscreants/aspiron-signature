@@ -249,10 +249,10 @@ function buildHtml(imgUrl) {
   const tdReset  = 'padding:0; margin:0; border:0; font-size:0; line-height:0; mso-line-height-rule:exactly;';
   const spacerTd = 'padding:0; margin:0; border:0; font-size:1px; line-height:1px; mso-line-height-rule:exactly;';
   const aReset   = 'margin:0; border:0; outline:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; mso-line-height-rule:exactly;';
-  const iconA = (bg, fs, fw) =>
-    `display:inline-block; width:28px; height:28px; box-sizing:border-box; background-color:${bg}; border-radius:6px; text-align:center; vertical-align:top; line-height:28px; text-decoration:none; font-family:Arial, Helvetica, sans-serif; font-size:${fs}px; font-weight:${fw}; font-style:normal; color:#000000; letter-spacing:0; ${aReset}`;
-  const pillA = (bg) =>
-    `display:inline-block; box-sizing:border-box; background-color:${bg}; color:#000000; font-family:Arial, Helvetica, sans-serif; font-size:9px; font-weight:600; font-style:normal; text-decoration:none; text-transform:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px; vertical-align:top; white-space:nowrap; ${aReset}`;
+  const iconA = (bg, fs, fw, mr) =>
+    `display:inline-block; width:28px; height:28px; box-sizing:border-box; background-color:${bg}; border-radius:6px; text-align:center; vertical-align:top; line-height:28px; text-decoration:none; font-family:Arial, Helvetica, sans-serif; font-size:${fs}px; font-weight:${fw}; font-style:normal; color:#000000; letter-spacing:0; margin-right:${mr}px; ${aReset}`;
+  const pillA = (bg, mr) =>
+    `display:inline-block; box-sizing:border-box; background-color:${bg}; color:#000000; font-family:Arial, Helvetica, sans-serif; font-size:9px; font-weight:600; font-style:normal; text-decoration:none; text-transform:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px; vertical-align:top; white-space:nowrap; margin-right:${mr}px; ${aReset}`;
 
   return `<!-- Aspiron Email Signature -->
 <table cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px; ${tblReset} font-family:Arial, Helvetica, sans-serif; font-size:0; line-height:0; color:#000000;">
@@ -275,17 +275,7 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">
               <tr>
-                <td width="28" height="28" style="width:28px; height:28px; padding:0; ${tdReset}">
-                  <a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700)}">in</a>
-                </td>
-                <td width="6" height="28" style="width:6px; min-width:6px; height:28px; padding:0; margin:0; border:0; font-size:1px; line-height:28px; mso-line-height-rule:exactly;">&nbsp;</td>
-                <td width="28" height="28" style="width:28px; height:28px; padding:0; ${tdReset}">
-                  <a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400)}">&#9654;</a>
-                </td>
-                <td width="6" height="28" style="width:6px; min-width:6px; height:28px; padding:0; margin:0; border:0; font-size:1px; line-height:28px; mso-line-height-rule:exactly;">&nbsp;</td>
-                <td width="28" height="28" style="width:28px; height:28px; ${tdReset}">
-                  <a href="${v.website}" target="_blank" style="${iconA(v.iconBg, 13, 400)}">&#8853;</a>
-                </td>
+                <td style="padding:0; ${tdReset} white-space:nowrap;"><a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700, 6)}">in</a><a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400, 6)}">&#9654;</a><a href="${v.website}" target="_blank" style="${iconA(v.iconBg, 13, 400, 0)}">&#8853;</a></td>
               </tr>
             </table>
 
@@ -295,17 +285,7 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">
               <tr>
-                <td style="padding:0; ${tdReset}">
-                  <a href="${v.search}" target="_blank" style="${pillA('#D8923E')}">SEARCH</a>
-                </td>
-                <td width="6" style="width:6px; min-width:6px; padding:0; margin:0; border:0; font-size:1px; line-height:1px; mso-line-height-rule:exactly;">&nbsp;</td>
-                <td style="padding:0; ${tdReset}">
-                  <a href="${v.influence}" target="_blank" style="${pillA('#FFA57E')}">INFLUENCE</a>
-                </td>
-                <td width="6" style="width:6px; min-width:6px; padding:0; margin:0; border:0; font-size:1px; line-height:1px; mso-line-height-rule:exactly;">&nbsp;</td>
-                <td style="padding:0; ${tdReset}">
-                  <a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0')}">VENTURES</a>
-                </td>
+                <td style="padding:0; ${tdReset} white-space:nowrap;"><a href="${v.search}" target="_blank" style="${pillA('#D8923E', 6)}">SEARCH</a><a href="${v.influence}" target="_blank" style="${pillA('#FFA57E', 6)}">INFLUENCE</a><a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0', 0)}">VENTURES</a></td>
               </tr>
             </table>
 

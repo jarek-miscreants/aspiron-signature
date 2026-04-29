@@ -92,7 +92,7 @@
         <div id="live-preview" style="border:1px solid var(--line); border-radius:4px; overflow:auto; background:#fff;"></div>
         <canvas id="cv" width="1200" height="300" style="position:absolute; left:-9999px; top:-9999px; width:600px; height:150px;"></canvas>
         <div class="row">
-          <button id="btn-copy-rich">Copy for Gmail / Mac</button>
+          <button id="btn-copy-rich">Copy for Gmail</button>
           <button id="btn-copy-outlook">Copy for Outlook</button>
           <button id="btn-download" class="secondary">Download PNG</button>
           <button id="btn-download-html" class="secondary">Download HTML</button>
@@ -254,7 +254,7 @@ function buildHtml(imgUrl) {
       <table cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px; border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0;">
         <tr>
           <td width="330" style="width:330px; min-width:330px; font-size:1px; line-height:1px;">&nbsp;</td>
-          <td width="270" valign="top" align="right" style="width:270px; padding:28px 24px 0 0; text-align:right;">
+          <td width="270" valign="top" align="right" style="width:270px; padding:28px 16px 0 0; text-align:right; font-size:0; line-height:0;">
 
             <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; border-collapse:collapse;">
               <tr><td height="44" style="height:44px; line-height:44px; font-size:1px;">&nbsp;</td></tr>
@@ -262,13 +262,13 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse; margin-left:auto; margin-right:0; mso-table-lspace:0; mso-table-rspace:0;">
               <tr>
-                <td style="padding-right:6px;">
+                <td style="padding-right:6px; font-size:0; line-height:0;">
                   <a href="${v.linkedin}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; font-weight:700; color:#000000;">in</a>
                 </td>
-                <td style="padding-right:6px;">
+                <td style="padding-right:6px; font-size:0; line-height:0;">
                   <a href="${v.youtube}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:12px; color:#000000;">&#9654;</a>
                 </td>
-                <td>
+                <td style="font-size:0; line-height:0;">
                   <a href="${v.website}" target="_blank" style="display:inline-block; width:28px; height:28px; background-color:${v.iconBg}; border-radius:6px; text-align:center; line-height:28px; text-decoration:none; font-size:13px; color:#000000;">&#8853;</a>
                 </td>
               </tr>
@@ -280,14 +280,14 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="border-collapse:collapse; margin-left:auto; margin-right:0; mso-table-lspace:0; mso-table-rspace:0;">
               <tr>
-                <td style="padding-right:8px;">
-                  <a href="${v.search}" target="_blank" style="display:inline-block; background-color:#D8923E; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 16px; border-radius:9px; line-height:1; letter-spacing:0.8px;">SEARCH</a>
+                <td style="padding-right:6px; font-size:0; line-height:0;">
+                  <a href="${v.search}" target="_blank" style="display:inline-block; background-color:#D8923E; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px;">SEARCH</a>
                 </td>
-                <td style="padding-right:8px;">
-                  <a href="${v.influence}" target="_blank" style="display:inline-block; background-color:#FFA57E; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 16px; border-radius:9px; line-height:1; letter-spacing:0.8px;">INFLUENCE</a>
+                <td style="padding-right:6px; font-size:0; line-height:0;">
+                  <a href="${v.influence}" target="_blank" style="display:inline-block; background-color:#FFA57E; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px;">INFLUENCE</a>
                 </td>
-                <td>
-                  <a href="${v.ventures}" target="_blank" style="display:inline-block; background-color:#EECAB0; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 16px; border-radius:9px; line-height:1; letter-spacing:0.8px;">VENTURES</a>
+                <td style="font-size:0; line-height:0;">
+                  <a href="${v.ventures}" target="_blank" style="display:inline-block; background-color:#EECAB0; color:#000000; font-size:9px; font-weight:600; font-family:Arial,Helvetica,sans-serif; text-decoration:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px;">VENTURES</a>
                 </td>
               </tr>
             </table>

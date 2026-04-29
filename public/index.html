@@ -522,7 +522,12 @@ async function renderFullBaked() {
   const pills = [];
   right = CONTENT_RIGHT;
   for (let i = pillDefs.length - 1; i >= 0; i--) {
-    const w = Math.ceil(c.measureText(pillDefs[i].text).width + PILL_PAD_X * 2);
+    // measureText does not include canvas letterSpacing in most engines, so
+    // add it manually so the pill background fully wraps the rendered text
+    // (otherwise the right edge overflows the BG, making pills appear shifted
+    // right of the icons that share CONTENT_RIGHT).
+    const trackedWidth = c.measureText(pillDefs[i].text).width + Math.max(0, pillDefs[i].text.length - 1) * 0.8;
+    const w = Math.ceil(trackedWidth + PILL_PAD_X * 2);
     const x = right - w;
     pills.unshift({ x, y: PILL_Y, w, h: PILL_H, href: pillDefs[i].href, def: pillDefs[i] });
     right = x - PILL_GAP;

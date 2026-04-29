@@ -120,6 +120,11 @@ const DEPT_COLORS = {
 let currentDept = "group";
 const PT_TO_PX = 4/3;
 const R2_PUBLIC_BASE = "https://pub-376c070665f24d80ac2828a67b43160a.r2.dev";
+const TEXT_X = 24;
+const NAME_Y = 30;
+const POSITION_Y = 60;
+const PHONE_Y = 100;
+const EMAIL_Y = 114;
 
 const els = {
   name: document.getElementById("f-name"),
@@ -175,29 +180,29 @@ function draw() {
   ctx.fillStyle = "#000000";
   ctx.textBaseline = "top";
 
-  // Name — Zalando Sans Expanded 24pt semi-bold at (30, 30)
+  // Name - Zalando Sans Expanded 24pt semi-bold
   ctx.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
-  ctx.fillText(els.name.value, 30, 30);
+  ctx.fillText(els.name.value, TEXT_X, NAME_Y);
 
-  // Position — Zalando Sans Regular 18pt at (30, 60)
+  // Position - Zalando Sans Regular 18pt
   ctx.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
-  ctx.fillText(els.position.value, 30, 60);
+  ctx.fillText(els.position.value, TEXT_X, POSITION_Y);
 
-  // Phone — IBM Plex Mono at (30, 106), "Phone:" bold, value regular
+  // Phone - IBM Plex Mono, "Phone:" bold, value regular
   const phoneLabel = "Phone: ";
   ctx.font = `600 11px "IBM Plex Mono", monospace`;
-  ctx.fillText(phoneLabel, 30, 106);
+  ctx.fillText(phoneLabel, TEXT_X, PHONE_Y);
   const phoneLabelW = ctx.measureText(phoneLabel).width;
   ctx.font = `400 11px "IBM Plex Mono", monospace`;
-  ctx.fillText(els.phone.value, 30 + phoneLabelW, 106);
+  ctx.fillText(els.phone.value, TEXT_X + phoneLabelW, PHONE_Y);
 
-  // Email — IBM Plex Mono at (30, 120), "Email:" bold, value regular
+  // Email - IBM Plex Mono, "Email:" bold, value regular
   const emailLabel = "Email: ";
   ctx.font = `600 11px "IBM Plex Mono", monospace`;
-  ctx.fillText(emailLabel, 30, 120);
+  ctx.fillText(emailLabel, TEXT_X, EMAIL_Y);
   const emailLabelW = ctx.measureText(emailLabel).width;
   ctx.font = `400 11px "IBM Plex Mono", monospace`;
-  ctx.fillText(els.email.value, 30 + emailLabelW, 120);
+  ctx.fillText(els.email.value, TEXT_X + emailLabelW, EMAIL_Y);
 }
 
 function slugify(s) {
@@ -285,7 +290,7 @@ function buildHtml(imgUrl) {
 
             <table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">
               <tr>
-                <td style="padding:0; ${tdReset} white-space:nowrap;"><a href="${v.search}" target="_blank" style="${pillA('#D8923E', 6)}">SEARCH</a><a href="${v.influence}" target="_blank" style="${pillA('#FFA57E', 6)}">INFLUENCE</a><a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0', 0)}">VENTURES</a></td>
+                <td style="padding:0; ${tdReset} white-space:nowrap;"><a href="${v.search}" target="_blank" style="${pillA('#D8923E', 4)}">SEARCH</a><a href="${v.influence}" target="_blank" style="${pillA('#FFA57E', 4)}">INFLUENCE</a><a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0', 0)}">VENTURES</a></td>
               </tr>
             </table>
 
@@ -426,11 +431,11 @@ const ICON_SIZE = 28;
 const ICON_GAP = 6;
 const ICON_RADIUS = 6;
 const PILL_Y = 110;
-const PILL_PAD_X = 16;
+const PILL_PAD_X = 12;
 const PILL_PAD_Y = 5;
 const PILL_RADIUS = 9;
 const PILL_FONT_SIZE = 9;
-const PILL_GAP = 8;
+const PILL_GAP = 4;
 
 function roundRect(c, x, y, w, h, r) {
   c.beginPath();
@@ -444,7 +449,7 @@ function roundRect(c, x, y, w, h, r) {
 
 const SIG_W = 600;
 const SIG_H = 150;
-const PILL_H = PILL_FONT_SIZE + PILL_PAD_Y * 2 + 4;
+const PILL_H = PILL_FONT_SIZE + PILL_PAD_Y * 2;
 
 async function renderFullBaked() {
   const canvas = document.createElement("canvas");
@@ -459,19 +464,19 @@ async function renderFullBaked() {
   c.textBaseline = "top";
   c.textAlign = "left";
   c.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
-  c.fillText(els.name.value, 30, 30);
+  c.fillText(els.name.value, TEXT_X, NAME_Y);
   c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
-  c.fillText(els.position.value, 30, 60);
+  c.fillText(els.position.value, TEXT_X, POSITION_Y);
   c.font = `600 11px "IBM Plex Mono", monospace`;
-  c.fillText("Phone: ", 30, 106);
+  c.fillText("Phone: ", TEXT_X, PHONE_Y);
   const phoneLabelW = c.measureText("Phone: ").width;
   c.font = `400 11px "IBM Plex Mono", monospace`;
-  c.fillText(els.phone.value, 30 + phoneLabelW, 106);
+  c.fillText(els.phone.value, TEXT_X + phoneLabelW, PHONE_Y);
   c.font = `600 11px "IBM Plex Mono", monospace`;
-  c.fillText("Email: ", 30, 120);
+  c.fillText("Email: ", TEXT_X, EMAIL_Y);
   const emailLabelW = c.measureText("Email: ").width;
   c.font = `400 11px "IBM Plex Mono", monospace`;
-  c.fillText(els.email.value, 30 + emailLabelW, 120);
+  c.fillText(els.email.value, TEXT_X + emailLabelW, EMAIL_Y);
 
   // Icon positions (left-to-right after computing right-aligned)
   const iconBg = DEPT_COLORS[currentDept];
@@ -505,7 +510,7 @@ async function renderFullBaked() {
     { bg: "#EECAB0", text: "VENTURES",  href: els.ventures.value  },
   ];
   c.font = `600 ${PILL_FONT_SIZE}px Arial, Helvetica, sans-serif`;
-  try { c.letterSpacing = "0.8px"; } catch (e) {}
+  try { c.letterSpacing = "0.6px"; } catch (e) {}
   const pills = [];
   right = CONTENT_RIGHT;
   for (let i = pillDefs.length - 1; i >= 0; i--) {
@@ -513,7 +518,7 @@ async function renderFullBaked() {
     // add it manually so the pill background fully wraps the rendered text
     // (otherwise the right edge overflows the BG, making pills appear shifted
     // right of the icons that share CONTENT_RIGHT).
-    const trackedWidth = c.measureText(pillDefs[i].text).width + Math.max(0, pillDefs[i].text.length - 1) * 0.8;
+    const trackedWidth = c.measureText(pillDefs[i].text).width + Math.max(0, pillDefs[i].text.length - 1) * 0.6;
     const w = Math.ceil(trackedWidth + PILL_PAD_X * 2);
     const x = right - w;
     pills.unshift({ x, y: PILL_Y, w, h: PILL_H, href: pillDefs[i].href, def: pillDefs[i] });

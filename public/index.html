@@ -587,10 +587,12 @@ function buildTileGrid(icons, pills) {
 
 async function sliceTileBlob(srcCanvas, x, y, w, h) {
   const sub = document.createElement("canvas");
-  sub.width = w * DPR;
-  sub.height = h * DPR;
+  // Outlook for Mac may display pasted images at intrinsic size, so export
+  // tiles at their final 1x dimensions while sampling from the 2x canvas.
+  sub.width = w;
+  sub.height = h;
   const c = sub.getContext("2d");
-  c.drawImage(srcCanvas, x * DPR, y * DPR, w * DPR, h * DPR, 0, 0, sub.width, sub.height);
+  c.drawImage(srcCanvas, x * DPR, y * DPR, w * DPR, h * DPR, 0, 0, w, h);
   return await new Promise(res => sub.toBlob(res, "image/png"));
 }
 

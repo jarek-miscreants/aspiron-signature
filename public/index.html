@@ -612,8 +612,14 @@ function buildTiledHtml(grid) {
   // (not just HTML attrs), TDs need explicit widths, and tables need
   // border-spacing:0 + mso-table-lspace/rspace:0 to suppress phantom padding
   // between cells that otherwise breaks seam alignment.
-  const tdBase = 'padding:0; margin:0; line-height:0; font-size:0; mso-line-height-rule:exactly;';
-  const tblBase = 'border-collapse:collapse; border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt;';
+  // vertical-align:top is needed as CSS (not just valign="top") because
+  // Outlook for Mac (WebKit-based) respects the CSS property and ignores the
+  // HTML attribute inconsistently, which lets row seams drift by 1–2px.
+  const tdBase = 'padding:0; margin:0; line-height:0; font-size:0; mso-line-height-rule:exactly; vertical-align:top;';
+  // table-layout:fixed on every nested table prevents Outlook for Mac from
+  // auto-sizing inner tables to image intrinsic dimensions and breaking the
+  // 338/262 column split.
+  const tblBase = 'border-collapse:collapse; border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt; table-layout:fixed;';
   const aBase = 'display:block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0;';
 
   const img = (url, w, h) =>
@@ -639,7 +645,7 @@ function buildTiledHtml(grid) {
   }).join("\n");
 
   return `<!-- Aspiron Email Signature (Outlook, column-sliced) -->
-<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="${tblBase} width:${SIG_W}px; table-layout:fixed;">
+<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="${tblBase} width:${SIG_W}px;">
   <tr>
     ${td(grid.leftTile.w, grid.leftTile.h, leftImg)}
     ${td(grid.rightW, SIG_H, `<table cellpadding="0" cellspacing="0" border="0" width="${grid.rightW}" style="${tblBase} width:${grid.rightW}px;">
@@ -647,6 +653,35 @@ ${rightRowsHtml}
     </table>`)}
   </tr>
 </table>`;
+}
+
+function copyHtmlViaEvent(html, text) {
+  const target = document.createElement("div");
+  target.setAttribute("contenteditable", "true");
+  target.style.position = "fixed";
+  target.style.left = "-9999px";
+  target.style.top = "0";
+  target.style.opacity = "0";
+  target.textContent = " ";
+  document.body.appendChild(target);
+  const range = document.createRange();
+  range.selectNodeContents(target);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  const handler = (e) => {
+    e.preventDefault();
+    e.clipboardData.setData("text/html", html);
+    e.clipboardData.setData("text/plain", text);
+  };
+  document.addEventListener("copy", handler);
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.removeEventListener("copy", handler);
+    sel.removeAllRanges();
+    target.remove();
+  }
 }
 
 async function copyForOutlook() {
@@ -683,12 +718,11 @@ async function copyForOutlook() {
 
     const html = buildTiledHtml(grid);
     const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        "text/html": new Blob([html], { type: "text/html" }),
-        "text/plain": new Blob([text], { type: "text/plain" }),
-      }),
-    ]);
+    // Outlook for Mac mis-renders the table when Chromium's ClipboardItem
+    // re-serializes the payload (it inserts a nested <html><head></head><body>
+    // around the fragment). Writing via a synchronous copy-event handler keeps
+    // the HTML byte-for-byte what buildTiledHtml produced.
+    copyHtmlViaEvent(html, text);
     els.status.textContent = "Copied — paste into Outlook";
     setTimeout(() => els.status.textContent = "", 4000);
   } catch (e) {

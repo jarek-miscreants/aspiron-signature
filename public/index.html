@@ -622,17 +622,25 @@ function buildTiledHtml(grid) {
   const tblBase = 'border-collapse:collapse; border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt; table-layout:fixed;';
   const aBase = 'display:block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0;';
 
+  // IMPORTANT: emit zero whitespace between table tags. Outlook for Mac
+  // (WebKit) renders whitespace text nodes between </td>/<td> and </tr>/<tr>
+  // as actual content, which inflates row heights and shifts seams even with
+  // font-size:0 on the cells. The whole signature must be a single line.
   const img = (url, w, h) =>
-    `<img src="${escapeAttr(url)}" width="${w}" height="${h}" border="0" alt="" style="display:block; border:0; outline:0; width:${w}px; height:${h}px; max-width:${w}px; -ms-interpolation-mode:bicubic;" />`;
+    `<img src="${escapeAttr(url)}" width="${w}" height="${h}" border="0" hspace="0" vspace="0" alt="" style="display:block; border:0; outline:0; width:${w}px; height:${h}px; max-width:${w}px; -ms-interpolation-mode:bicubic;" />`;
   const td = (w, h, inner) =>
     `<td width="${w}" height="${h}" style="${tdBase} width:${w}px; height:${h}px;" valign="top">${inner}</td>`;
+  const tbl = (w, inner) =>
+    `<table cellpadding="0" cellspacing="0" border="0" width="${w}" style="${tblBase} width:${w}px;"><tr>${inner}</tr></table>`;
+  const tblRows = (w, rowsInner) =>
+    `<table cellpadding="0" cellspacing="0" border="0" width="${w}" style="${tblBase} width:${w}px;">${rowsInner}</table>`;
 
   const leftImg = img(grid.leftTile.url, grid.leftTile.w, grid.leftTile.h);
 
   const rightRowsHtml = grid.rightRows.map(row => {
     if (row.cells.length === 1) {
       const c = row.cells[0];
-      return `      <tr>${td(c.w, row.h, img(c.url, c.w, row.h))}</tr>`;
+      return `<tr>${td(c.w, row.h, img(c.url, c.w, row.h))}</tr>`;
     }
     const cellsHtml = row.cells.map(c => {
       const imgEl = img(c.url, c.w, row.h);
@@ -641,18 +649,16 @@ function buildTiledHtml(grid) {
         : imgEl;
       return td(c.w, row.h, body);
     }).join("");
-    return `      <tr>${td(grid.rightW, row.h, `<table cellpadding="0" cellspacing="0" border="0" width="${grid.rightW}" style="${tblBase} width:${grid.rightW}px;"><tr>${cellsHtml}</tr></table>`)}</tr>`;
-  }).join("\n");
+    return `<tr>${td(grid.rightW, row.h, tbl(grid.rightW, cellsHtml))}</tr>`;
+  }).join("");
 
-  return `<!-- Aspiron Email Signature (Outlook, column-sliced) -->
-<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="${tblBase} width:${SIG_W}px;">
-  <tr>
-    ${td(grid.leftTile.w, grid.leftTile.h, leftImg)}
-    ${td(grid.rightW, SIG_H, `<table cellpadding="0" cellspacing="0" border="0" width="${grid.rightW}" style="${tblBase} width:${grid.rightW}px;">
-${rightRowsHtml}
-    </table>`)}
-  </tr>
-</table>`;
+  return `<!-- Aspiron Email Signature (Outlook, column-sliced) -->`
+    + `<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" style="${tblBase} width:${SIG_W}px;">`
+    + `<tr>`
+    + td(grid.leftTile.w, grid.leftTile.h, leftImg)
+    + td(grid.rightW, SIG_H, tblRows(grid.rightW, rightRowsHtml))
+    + `</tr>`
+    + `</table>`;
 }
 
 function copyHtmlViaEvent(html, text) {

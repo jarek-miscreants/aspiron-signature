@@ -38,7 +38,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.10</span></h1>
+  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.11</span></h1>
   <p class="lead">Bakes custom fonts into a PNG so email clients can’t strip them. Fill the fields → download the PNG → host it → copy the HTML.</p>
 
   <div class="grid">
@@ -754,9 +754,46 @@ document.getElementById("btn-copy-outlook").addEventListener("click", copyForOut
 // surrounding <td bgcolor> hides those gaps. V2 also drops the column-sliced
 // PNG approach entirely: the right column is the Gmail-path's live HTML
 // (icons + pills as styled <a> tags), which has no seams of its own.
-const V2_BG_COLOR = "#EADCC4";
+const V2_BG_COLOR = "#E5DFD3";
 const V2_LEFT_W = 338;
 const V2_RIGHT_W = SIG_W - V2_LEFT_W;
+// Logo crop region inside the original 600x150 BG. The four department BGs
+// place the ASPIRON mark + wordmark (+ optional SEARCH/INFLUENCE subtitle) in
+// roughly the same coordinates, so a single crop region works for all four
+// and the per-department variant is selected by reading bgImage at runtime.
+const V2_LOGO_SRC_X = 420;
+const V2_LOGO_SRC_Y = 15;
+const V2_LOGO_SRC_W = 165;
+const V2_LOGO_SRC_H = 45;
+
+async function renderV2Logo() {
+  // Pull the @2x background source so the cropped logo stays sharp on retina;
+  // fall back to the 1x bgImage if the high-res file isn't available.
+  const hiPath = DEPT_BACKGROUNDS[currentDept].replace(/\.png$/, "@2x.png");
+  let src = bgImage;
+  let factor = 1;
+  try {
+    src = await loadImage(hiPath);
+    factor = 2;
+  } catch (e) {
+    src = bgImage;
+    factor = 1;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = V2_LOGO_SRC_W * DPR;
+  canvas.height = V2_LOGO_SRC_H * DPR;
+  const c = canvas.getContext("2d");
+  // Fill with V2 BG first so any sub-pixel crop edges blend into the flat
+  // colour rather than revealing the texture.
+  c.fillStyle = V2_BG_COLOR;
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.drawImage(src,
+    V2_LOGO_SRC_X * factor, V2_LOGO_SRC_Y * factor,
+    V2_LOGO_SRC_W * factor, V2_LOGO_SRC_H * factor,
+    0, 0,
+    V2_LOGO_SRC_W * DPR, V2_LOGO_SRC_H * DPR);
+  return canvas;
+}
 
 async function renderV2LeftTile() {
   const canvas = document.createElement("canvas");
@@ -786,7 +823,7 @@ async function renderV2LeftTile() {
   return canvas;
 }
 
-function buildV2Html(leftImgUrl) {
+function buildV2Html(leftImgUrl, logoImgUrl) {
   const v = {
     linkedin: escapeAttr(els.linkedin.value),
     youtube: escapeAttr(els.youtube.value),
@@ -795,6 +832,7 @@ function buildV2Html(leftImgUrl) {
     influence: escapeAttr(els.influence.value),
     ventures: escapeAttr(els.ventures.value),
     img: escapeAttr(leftImgUrl),
+    logo: escapeAttr(logoImgUrl),
     iconBg: DEPT_COLORS[currentDept],
     bg: V2_BG_COLOR,
   };
@@ -815,9 +853,18 @@ function buildV2Html(leftImgUrl) {
     + `<td width="${V2_LEFT_W}" height="${SIG_H}" bgcolor="${v.bg}" valign="top" style="${tdReset} width:${V2_LEFT_W}px; height:${SIG_H}px; background-color:${v.bg}; vertical-align:top;">`
     + `<img src="${v.img}" width="${V2_LEFT_W}" height="${SIG_H}" border="0" hspace="0" vspace="0" alt="" style="display:block; border:0; outline:0; margin:0; padding:0; vertical-align:top; width:${V2_LEFT_W}px; height:${SIG_H}px; max-width:${V2_LEFT_W}px; -ms-interpolation-mode:bicubic; background-color:${v.bg};" />`
     + `</td>`
-    + `<td width="${V2_RIGHT_W}" height="${SIG_H}" bgcolor="${v.bg}" valign="top" align="right" style="width:${V2_RIGHT_W}px; height:${SIG_H}px; padding:28px 16px 0 0; margin:0; border:0; font-size:0; line-height:0; mso-line-height-rule:exactly; text-align:right; vertical-align:top; background-color:${v.bg}; color:#000000;">`
+    + `<td width="${V2_RIGHT_W}" height="${SIG_H}" bgcolor="${v.bg}" valign="top" align="right" style="width:${V2_RIGHT_W}px; height:${SIG_H}px; padding:14px 16px 0 0; margin:0; border:0; font-size:0; line-height:0; mso-line-height-rule:exactly; text-align:right; vertical-align:top; background-color:${v.bg}; color:#000000;">`
+    // Department logo (links to Website URL), right-aligned. Replaces the
+    // previous 44px top spacer that V2.0 used.
+    + `<table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">`
+    + `<tr><td style="${tdReset}">`
+    + `<a href="${v.website}" target="_blank" style="display:inline-block; line-height:0; font-size:0; text-decoration:none; border:0; outline:0; margin:0; padding:0; vertical-align:top;">`
+    + `<img src="${v.logo}" width="${V2_LOGO_SRC_W}" height="${V2_LOGO_SRC_H}" border="0" hspace="0" vspace="0" alt="Aspiron" style="display:block; border:0; outline:0; margin:0; padding:0; vertical-align:top; width:${V2_LOGO_SRC_W}px; height:${V2_LOGO_SRC_H}px; max-width:${V2_LOGO_SRC_W}px; -ms-interpolation-mode:bicubic; background-color:${v.bg};" />`
+    + `</a>`
+    + `</td></tr>`
+    + `</table>`
     + `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; ${tblReset}">`
-    + `<tr><td height="44" width="100%" style="width:100%; height:44px; padding:0; margin:0; border:0; font-size:1px; line-height:44px; mso-line-height-rule:exactly;">&nbsp;</td></tr>`
+    + `<tr><td height="8" width="100%" style="width:100%; height:8px; padding:0; margin:0; border:0; font-size:1px; line-height:8px; mso-line-height-rule:exactly;">&nbsp;</td></tr>`
     + `</table>`
     + `<table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">`
     + `<tr><td style="padding:0; ${tdReset} white-space:nowrap;">`
@@ -845,11 +892,22 @@ async function copyForOutlookV2() {
   els.status.textContent = "Baking V2…";
   try {
     await ensureFonts();
-    const canvas = await renderV2LeftTile();
-    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    if (!bgImage) throw new Error("Background not loaded");
+    const [leftCanvas, logoCanvas] = await Promise.all([
+      renderV2LeftTile(),
+      renderV2Logo(),
+    ]);
+    const [leftBlob, logoBlob] = await Promise.all([
+      new Promise(res => leftCanvas.toBlob(res, "image/png")),
+      new Promise(res => logoCanvas.toBlob(res, "image/png")),
+    ]);
     els.status.textContent = "Uploading…";
-    const url = await uploadBlob(blob, slugify(els.name.value) + "-v2");
-    const html = buildV2Html(url);
+    const slug = slugify(els.name.value);
+    const [leftUrl, logoUrl] = await Promise.all([
+      uploadBlob(leftBlob, slug + "-v2-left"),
+      uploadBlob(logoBlob, slug + "-v2-logo-" + currentDept),
+    ]);
+    const html = buildV2Html(leftUrl, logoUrl);
     const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
     document.getElementById("live-preview").innerHTML = html;
     await navigator.clipboard.write([

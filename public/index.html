@@ -38,7 +38,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.9</span></h1>
+  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.10</span></h1>
   <p class="lead">Bakes custom fonts into a PNG so email clients can’t strip them. Fill the fields → download the PNG → host it → copy the HTML.</p>
 
   <div class="grid">
@@ -94,6 +94,7 @@
         <div class="row">
           <button id="btn-copy-rich">Copy for Gmail</button>
           <button id="btn-copy-outlook">Copy for Outlook</button>
+          <button id="btn-copy-v2">Signature V2</button>
           <button id="btn-copy-simplified">Copy Simplified</button>
           <button id="btn-download" class="secondary">Download PNG</button>
           <button id="btn-download-html" class="secondary">Download HTML</button>
@@ -746,6 +747,125 @@ async function copyForOutlook() {
   }
 }
 document.getElementById("btn-copy-outlook").addEventListener("click", copyForOutlook);
+
+// -- Signature V2: flat-bg, no texture, single-image left + live-HTML right ---
+// The textured BG image is what makes hairline seams between tiles visible —
+// any 1px gap reveals a different texture pattern. A flat color filled by the
+// surrounding <td bgcolor> hides those gaps. V2 also drops the column-sliced
+// PNG approach entirely: the right column is the Gmail-path's live HTML
+// (icons + pills as styled <a> tags), which has no seams of its own.
+const V2_BG_COLOR = "#EADCC4";
+const V2_LEFT_W = 338;
+const V2_RIGHT_W = SIG_W - V2_LEFT_W;
+
+async function renderV2LeftTile() {
+  const canvas = document.createElement("canvas");
+  canvas.width = V2_LEFT_W * DPR;
+  canvas.height = SIG_H * DPR;
+  const c = canvas.getContext("2d");
+  c.scale(DPR, DPR);
+  c.fillStyle = V2_BG_COLOR;
+  c.fillRect(0, 0, V2_LEFT_W, SIG_H);
+  c.fillStyle = "#000000";
+  c.textBaseline = "top";
+  c.textAlign = "left";
+  c.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  c.fillText(els.name.value, TEXT_X, NAME_Y);
+  c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
+  c.fillText(els.position.value, TEXT_X, POSITION_Y);
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText("Phone: ", TEXT_X, PHONE_Y);
+  const phoneLabelW = c.measureText("Phone: ").width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.phone.value, TEXT_X + phoneLabelW, PHONE_Y);
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText("Email: ", TEXT_X, EMAIL_Y);
+  const emailLabelW = c.measureText("Email: ").width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.email.value, TEXT_X + emailLabelW, EMAIL_Y);
+  return canvas;
+}
+
+function buildV2Html(leftImgUrl) {
+  const v = {
+    linkedin: escapeAttr(els.linkedin.value),
+    youtube: escapeAttr(els.youtube.value),
+    website: escapeAttr(els.website.value),
+    search: escapeAttr(els.search.value),
+    influence: escapeAttr(els.influence.value),
+    ventures: escapeAttr(els.ventures.value),
+    img: escapeAttr(leftImgUrl),
+    iconBg: DEPT_COLORS[currentDept],
+    bg: V2_BG_COLOR,
+  };
+  const tblReset = 'border-collapse:collapse; border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt; padding:0; margin:0;';
+  const tdReset  = 'padding:0; margin:0; border:0; font-size:0; line-height:0; mso-line-height-rule:exactly;';
+  const aReset   = 'margin:0; border:0; outline:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; mso-line-height-rule:exactly;';
+  const iconA = (bg, fs, fw, mr) =>
+    `display:inline-block; width:28px; height:28px; box-sizing:border-box; background-color:${bg}; border-radius:6px; text-align:center; vertical-align:top; line-height:28px; text-decoration:none; font-family:Arial, Helvetica, sans-serif; font-size:${fs}px; font-weight:${fw}; font-style:normal; color:#000000; letter-spacing:0; ${aReset} margin-right:${mr}px;`;
+  const pillA = (bg, mr) =>
+    `display:inline-block; box-sizing:border-box; background-color:${bg}; color:#000000; font-family:Arial, Helvetica, sans-serif; font-size:9px; font-weight:600; font-style:normal; text-decoration:none; text-transform:none; padding:5px 12px; border-radius:9px; line-height:1; letter-spacing:0.6px; vertical-align:top; white-space:nowrap; ${aReset} margin-right:${mr}px;`;
+
+  // bgcolor on every text-bearing cell — when WebKit opens a sub-pixel seam at
+  // the left/right TD boundary, the gap fills with V2_BG_COLOR and becomes
+  // invisible against the flat-coloured left tile.
+  return `<!-- Aspiron Email Signature V2 (flat bg, hybrid tile+HTML) -->`
+    + `<table cellpadding="0" cellspacing="0" border="0" width="${SIG_W}" bgcolor="${v.bg}" style="${tblReset} width:${SIG_W}px; background-color:${v.bg}; font-family:Arial, Helvetica, sans-serif; font-size:0; line-height:0; color:#000000;">`
+    + `<tr>`
+    + `<td width="${V2_LEFT_W}" height="${SIG_H}" bgcolor="${v.bg}" valign="top" style="${tdReset} width:${V2_LEFT_W}px; height:${SIG_H}px; background-color:${v.bg}; vertical-align:top;">`
+    + `<img src="${v.img}" width="${V2_LEFT_W}" height="${SIG_H}" border="0" hspace="0" vspace="0" alt="" style="display:block; border:0; outline:0; margin:0; padding:0; vertical-align:top; width:${V2_LEFT_W}px; height:${SIG_H}px; max-width:${V2_LEFT_W}px; -ms-interpolation-mode:bicubic; background-color:${v.bg};" />`
+    + `</td>`
+    + `<td width="${V2_RIGHT_W}" height="${SIG_H}" bgcolor="${v.bg}" valign="top" align="right" style="width:${V2_RIGHT_W}px; height:${SIG_H}px; padding:28px 16px 0 0; margin:0; border:0; font-size:0; line-height:0; mso-line-height-rule:exactly; text-align:right; vertical-align:top; background-color:${v.bg}; color:#000000;">`
+    + `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; ${tblReset}">`
+    + `<tr><td height="44" width="100%" style="width:100%; height:44px; padding:0; margin:0; border:0; font-size:1px; line-height:44px; mso-line-height-rule:exactly;">&nbsp;</td></tr>`
+    + `</table>`
+    + `<table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">`
+    + `<tr><td style="padding:0; ${tdReset} white-space:nowrap;">`
+    + `<a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700, 6)}">in</a>`
+    + `<a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400, 6)}">&#9654;</a>`
+    + `<a href="${v.website}" target="_blank" style="${iconA(v.iconBg, 13, 400, 0)}">&#8853;</a>`
+    + `</td></tr>`
+    + `</table>`
+    + `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; ${tblReset}">`
+    + `<tr><td height="10" width="100%" style="width:100%; height:10px; padding:0; margin:0; border:0; font-size:1px; line-height:10px; mso-line-height-rule:exactly;">&nbsp;</td></tr>`
+    + `</table>`
+    + `<table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">`
+    + `<tr><td style="padding:0; ${tdReset} white-space:nowrap;">`
+    + `<a href="${v.search}" target="_blank" style="${pillA('#D8923E', 4)}">SEARCH</a>`
+    + `<a href="${v.influence}" target="_blank" style="${pillA('#FFA57E', 4)}">INFLUENCE</a>`
+    + `<a href="${v.ventures}" target="_blank" style="${pillA('#EECAB0', 0)}">VENTURES</a>`
+    + `</td></tr>`
+    + `</table>`
+    + `</td>`
+    + `</tr>`
+    + `</table>`;
+}
+
+async function copyForOutlookV2() {
+  els.status.textContent = "Baking V2…";
+  try {
+    await ensureFonts();
+    const canvas = await renderV2LeftTile();
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    els.status.textContent = "Uploading…";
+    const url = await uploadBlob(blob, slugify(els.name.value) + "-v2");
+    const html = buildV2Html(url);
+    const text = `${els.name.value} — ${els.position.value}\n${els.phone.value}\n${els.email.value}`;
+    document.getElementById("live-preview").innerHTML = html;
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" }),
+      }),
+    ]);
+    els.status.textContent = "Copied V2 — paste into Outlook";
+    setTimeout(() => els.status.textContent = "", 4000);
+  } catch (e) {
+    els.status.textContent = "V2 copy failed: " + e.message;
+    setTimeout(() => els.status.textContent = "", 5000);
+  }
+}
+document.getElementById("btn-copy-v2").addEventListener("click", copyForOutlookV2);
 
 function buildSimplifiedHtml(imgUrl, href) {
   const safeImg = escapeAttr(imgUrl);

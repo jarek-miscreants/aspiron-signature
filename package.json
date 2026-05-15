@@ -1,6 +1,6 @@
 {
   "name": "aspiron-signature",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",

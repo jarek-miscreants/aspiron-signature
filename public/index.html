@@ -38,7 +38,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.12</span></h1>
+  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.13</span></h1>
   <p class="lead">Bakes custom fonts into a PNG so email clients can’t strip them. Fill the fields → download the PNG → host it → copy the HTML.</p>
 
   <div class="grid">
@@ -806,9 +806,27 @@ async function renderV2LeftTile() {
   c.fillStyle = "#000000";
   c.textBaseline = "top";
   c.textAlign = "left";
-  c.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+
+  // V2's left tile is only ~half-width (338px), so the V1 24pt name + 18pt
+  // position routinely overflow on long names like "Courtney Chatterton".
+  // Start one step smaller than V1 and auto-shrink further if measureText
+  // says we still don't fit. Floor values keep small names from looking
+  // anaemic.
+  const maxTextW = V2_LEFT_W - TEXT_X * 2;
+  let namePt = 20;
+  c.font = `600 ${namePt * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  while (c.measureText(els.name.value).width > maxTextW && namePt > 12) {
+    namePt -= 1;
+    c.font = `600 ${namePt * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  }
   c.fillText(els.name.value, TEXT_X, NAME_Y);
-  c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
+
+  let posPt = 14;
+  c.font = `400 ${posPt * PT_TO_PX}px "Zalando Sans", sans-serif`;
+  while (c.measureText(els.position.value).width > maxTextW && posPt > 10) {
+    posPt -= 1;
+    c.font = `400 ${posPt * PT_TO_PX}px "Zalando Sans", sans-serif`;
+  }
   c.fillText(els.position.value, TEXT_X, POSITION_Y);
   c.font = `600 11px "IBM Plex Mono", monospace`;
   c.fillText("Phone: ", TEXT_X, PHONE_Y);
@@ -868,8 +886,8 @@ function buildV2Html(leftImgUrl, logoImgUrl) {
     + `</table>`
     + `<table cellpadding="0" cellspacing="0" border="0" align="right" style="${tblReset} margin-left:auto; margin-right:0; font-size:0; line-height:0;">`
     + `<tr><td style="padding:0; ${tdReset} white-space:nowrap;">`
-    + `<a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700, 6)}">in</a>`
-    + `<a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400, 6)}">&#9654;</a>`
+    + `<a href="${v.linkedin}" target="_blank" style="${iconA(v.iconBg, 13, 700, 4)}">in</a>`
+    + `<a href="${v.youtube}" target="_blank" style="${iconA(v.iconBg, 12, 400, 4)}">&#9654;</a>`
     + `<a href="${v.website}" target="_blank" style="${iconA(v.iconBg, 13, 400, 0)}">&#8853;</a>`
     + `</td></tr>`
     + `</table>`

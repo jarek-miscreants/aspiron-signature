@@ -38,7 +38,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.11</span></h1>
+  <h1>Aspiron Signature Generator <span style="font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; font-weight:400; color:var(--muted); letter-spacing:0.04em; vertical-align:middle; margin-left:8px;">v0.0.12</span></h1>
   <p class="lead">Bakes custom fonts into a PNG so email clients can’t strip them. Fill the fields → download the PNG → host it → copy the HTML.</p>
 
   <div class="grid">
@@ -925,6 +925,36 @@ async function copyForOutlookV2() {
 }
 document.getElementById("btn-copy-v2").addEventListener("click", copyForOutlookV2);
 
+async function renderSimplifiedBaked() {
+  // Simplified = department BG image (logo already baked in) + the four lines
+  // of text. No icon overlays, no pill overlays — clicking anywhere on the
+  // signature goes to the Website URL via the outer <a> wrap.
+  const canvas = document.createElement("canvas");
+  canvas.width = SIG_W * DPR;
+  canvas.height = SIG_H * DPR;
+  const c = canvas.getContext("2d");
+  c.scale(DPR, DPR);
+  c.drawImage(bgImage, 0, 0, SIG_W, SIG_H);
+  c.fillStyle = "#000000";
+  c.textBaseline = "top";
+  c.textAlign = "left";
+  c.font = `600 ${24 * PT_TO_PX}px "Zalando Sans Expanded", sans-serif`;
+  c.fillText(els.name.value, TEXT_X, NAME_Y);
+  c.font = `400 ${18 * PT_TO_PX}px "Zalando Sans", sans-serif`;
+  c.fillText(els.position.value, TEXT_X, POSITION_Y);
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText("Phone: ", TEXT_X, PHONE_Y);
+  const phoneLabelW = c.measureText("Phone: ").width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.phone.value, TEXT_X + phoneLabelW, PHONE_Y);
+  c.font = `600 11px "IBM Plex Mono", monospace`;
+  c.fillText("Email: ", TEXT_X, EMAIL_Y);
+  const emailLabelW = c.measureText("Email: ").width;
+  c.font = `400 11px "IBM Plex Mono", monospace`;
+  c.fillText(els.email.value, TEXT_X + emailLabelW, EMAIL_Y);
+  return canvas;
+}
+
 function buildSimplifiedHtml(imgUrl, href) {
   const safeImg = escapeAttr(imgUrl);
   const safeHref = escapeAttr(href);
@@ -945,7 +975,7 @@ async function copyForSimplified() {
   try {
     await ensureFonts();
     if (!bgImage) throw new Error("Background not loaded");
-    const { canvas } = await renderFullBaked();
+    const canvas = await renderSimplifiedBaked();
     const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
     els.status.textContent = "Uploading…";
     const url = await uploadBlob(blob, slugify(els.name.value) + "-simple");
